@@ -1,4 +1,6 @@
 module.exports  = {
-    USER: 5000,
-    ADMIN: 5001
+    CUSTOMER: 5000,
+    ADMIN: 5001,
+    MANAGER:5002,
+    STAFF:5003
 }

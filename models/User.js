@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const {USER, ADMIN} = require('../utils/rolesList');
+const {CUSTOMER,MANAGER,STAFF, ADMIN} = require('../utils/rolesList');
 const EMAIL_REGEX = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const NAME_REGEX = /^[a-z ,.'-]+$/i;
 const MOBILE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\ -]\s*)?|[0]?)?[456789]\d{8}|(\d[ -]?){9}\d$/;
@@ -34,7 +34,8 @@ const userSchema = mongoose.Schema({
     role: {
         type: Number,
         required:true,
-        enum:[USER,ADMIN]
+        enum:[CUSTOMER,MANAGER,STAFF, ADMIN],
+        default:CUSTOMER
     },
     refreshToken:{
         type:String,
