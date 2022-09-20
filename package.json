@@ -1,0 +1,19 @@
+{
+  "name": "ftiqms-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SEP-Group-20/FTIQMS-Server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SEP-Group-20/FTIQMS-Server/issues"
+  },
+  "homepage": "https://github.com/SEP-Group-20/FTIQMS-Server#readme"
+}
