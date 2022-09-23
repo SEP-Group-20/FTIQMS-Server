@@ -3,11 +3,15 @@ const {CUSTOMER,MANAGER,STAFF, ADMIN} = require('../utils/rolesList');
 const EMAIL_REGEX = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const NAME_REGEX = /^[a-z ,.'-]+$/i;
 const MOBILE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\ -]\s*)?|[0]?)?[456789]\d{8}|(\d[ -]?){9}\d$/;
+// const NIC_REGEX = 
 
 const userSchema = mongoose.Schema({
+    NIC:{
+        type:String,
+        unique:true
+    },
     email: {
         type: String,
-        required: true,
         pattern: EMAIL_REGEX,
         unique:true
     },
