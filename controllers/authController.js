@@ -11,7 +11,7 @@ const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,}
 
 const validateUser = (user) => {
     const schema = Joi.object({
-        email: Joi.string().pattern(EMAIL_REGEX).required(),
+        NIC: Joi.string().required(),
         password: Joi.string().pattern(PWD_REGEX).required(),
         firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required(),
         lastName: Joi.string().min(1).max(50),
@@ -29,23 +29,23 @@ const registerCustomer = async (req, res) => {
     }
 
     const alreadyRegistered = await User.findOne({
-        email: req.body.email
+        NIC: req.body.NIC
     }).select({
-        email: 1
+        NIC: 1
     });
 
     if (!alreadyRegistered) {
         const hash = await bcrypt.hash(req.body.password, SALT_ROUNDS);
 
-        let user = _.pick(req.body, ["email", "firstName", "lastName", "mobile"]);
+        let user = _.pick(req.body, ["NIC", "firstName", "lastName", "mobile"]);
         user.password = hash;
         user.role = ROLES_LIST.USER;
 
         user = new User(user);
-        res.status(201).send(_.pick(await user.save(), ["email", "_id", "firstName"]));
+        res.status(201).send(_.pick(await user.save(), ["NIC", "_id", "firstName"]));
 
     } else {
-        res.status(400).json({ "message": "AlreadyRegisteredEmail" });
+        res.status(400).json({ "message": "AlreadyRegisteredNIC" });
     }
 
 }
