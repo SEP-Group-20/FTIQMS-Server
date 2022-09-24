@@ -11,6 +11,7 @@ router.get('/refresh/:role', authController.refresh);
 router.get('/logout', verifyJWT, authController.logout);
 router.get('/check', verifyJWT, verifyRoles(ROLES_LIST.USER), (req, res) => {
     res.send({ userID: req.userID, role: req.role });
-})
+});
+router.post("/checkNIC",authController.checkNIC)
 
 module.exports = router;
