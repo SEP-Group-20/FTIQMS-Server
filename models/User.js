@@ -1,25 +1,23 @@
 const mongoose = require('mongoose');
-const {CUSTOMER,MANAGER,STAFF, ADMIN} = require('../utils/rolesList');
+const { CUSTOMER, MANAGER, STAFF, ADMIN } = require('../utils/rolesList');
 const EMAIL_REGEX = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const NAME_REGEX = /^[a-z ,.'-]+$/i;
 const MOBILE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\ -]\s*)?|[0]?)?[456789]\d{8}|(\d[ -]?){9}\d$/;
 // const NIC_REGEX = 
 
 const userSchema = mongoose.Schema({
-    NIC:{
-        type:String,
-        unique:true
+    NIC: {
+        type: String,
     },
     email: {
         type: String,
         pattern: EMAIL_REGEX,
-        unique:true
     },
     password: {
         type: String,
         required: true,
-        minlength:5,
-        maxlength:1024
+        minlength: 5,
+        maxlength: 1024
     },
     firstName: {
         type: String,
@@ -37,12 +35,15 @@ const userSchema = mongoose.Schema({
     },
     role: {
         type: Number,
-        required:true,
-        enum:[CUSTOMER,MANAGER,STAFF, ADMIN],
-        default:CUSTOMER
+        required: true,
+        enum: [CUSTOMER, MANAGER, STAFF, ADMIN],
+        default: CUSTOMER
     },
     fuelStations: [
-        mongoose.Types.ObjectId
+        {
+          type: mongoose.Types.ObjectId,
+          ref: 'FuelStation'
+        }
     ],
     remainingPetrol: {
         type: Number,
@@ -61,7 +62,10 @@ const userSchema = mongoose.Schema({
         default: 0
     },
     vehicles: [
-        mongoose.Types.ObjectId
+        {
+          type: mongoose.Types.ObjectId,
+          ref: 'Vehicle'
+        }
     ],
     refreshToken:{
         type:String,
