@@ -9,7 +9,7 @@ const SALT_ROUNDS = 9;
 
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
 
-const validateUser = (user) => {
+const validateCustomer = (user) => {
     const schema = Joi.object({
         NIC: Joi.string().required(),
         password: Joi.string().pattern(PWD_REGEX).required(),
@@ -22,7 +22,7 @@ const validateUser = (user) => {
 
 const registerCustomer = async (req, res) => {
 
-    const { error } = validateUser(req.body);
+    const { error } = validateCustomer(req.body);
     if (error) {
         res.status(400).send(error);
         return
@@ -79,6 +79,39 @@ const login = async (req, res) => {
         user.save();
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['email', '_id', 'role']) });
+
+    }
+}
+
+const customerLogin = async (req, res) => {
+    const NIC = req.body.NIC;
+    const password = req.body.password;
+    if (!NIC || !password) return res.sendStatus(400); //bad request
+
+    const user = await User
+        .findOne({ NIC: NIC })
+        .select({ NIC: 1, password: 1, role: 1 });
+    if (!user) return res.sendStatus(401);
+
+    const result = await bcrypt.compare(password, user.password);
+
+    if (!result) {
+        return res.sendStatus(401);
+    } else {
+        const accessToken = jwt.sign({
+            "userInfo": {
+                "id": user._id,
+                "role": user.role,   //5000 for users
+                "NIC": user.NIC
+            }
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
+
+        const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
+
+        user.refreshToken = refreshToken;
+        user.save();
+        res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
 
     }
 }
@@ -154,4 +187,4 @@ const checkNIC = async (req,res)=>{
     res.json({success:false});
 }
 
-module.exports = {registerCustomer,login,refresh,logout,checkNIC};
+module.exports = {registerCustomer,login,refresh,logout,checkNIC,customerLogin};

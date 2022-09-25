@@ -7,6 +7,7 @@ const authController = require('../controllers/authController');
 
 router.post("/register",authController.registerCustomer);
 router.post('/login', authController.login);
+router.post('/customerlogin', authController.customerLogin);
 router.get('/refresh/:role', authController.refresh);
 router.get('/logout', verifyJWT, authController.logout);
 router.get('/check', verifyJWT, verifyRoles(ROLES_LIST.USER), (req, res) => {
