@@ -46,20 +46,16 @@ const userSchema = mongoose.Schema({
         }
     ],
     remainingPetrol: {
-        type: Number,
-        default: 0
+        type: Number
     },
     remainingDiesel: {
-        type: Number,
-        default: 0
+        type: Number
     },
     petrolAllocation: {
-        type: Number,
-        default: 0
+        type: Number
     },
     dieselAllocation: {
-        type: Number,
-        default: 0
+        type: Number
     },
     vehicles: [
         {

@@ -15,11 +15,11 @@ const vehicleSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    model: {
+    make: {
         type: String,
         required: true
     },
-    make: {
+    model: {
         type: String,
         required: true
     },
@@ -30,6 +30,10 @@ const vehicleSchema = mongoose.Schema({
     vehicleType: {
         type: String,
         required: true
+    },
+    isQueued: {
+        type: Boolean,
+        default: false
     },
     notificationsSent: {
         type: Number,

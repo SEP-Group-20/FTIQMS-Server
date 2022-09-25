@@ -4,8 +4,8 @@
         "chassisNumber": "12345678901234567",
         "owner": "Thivindu Paranayapa",
         "mobileNumber": "0777846523",
-        "model": "Toyota",
-        "make": "Axio",
+        "make": "Toyota",
+        "model": "Axio",
         "vehicleType": "Car",
         "fuelType": "Petrol"
     },
@@ -14,8 +14,8 @@
         "chassisNumber": "12345678901234568",
         "owner": "Ajith Paranayapa",
         "mobileNumber": "0777735485",
-        "model": "Nissan",
-        "make": "Sunny",
+        "make": "Nissan",
+        "model": "Sunny",
         "vehicleType": "Car",
         "fuelType": "Petrol"
     },
@@ -24,8 +24,8 @@
         "chassisNumber": "12345678901234569",
         "owner": "Sriyani de Silva",
         "mobileNumber": "0711236008",
-        "model": "Toyota",
-        "make": "Premio",
+        "make": "Toyota",
+        "model": "Premio",
         "vehicleType": "Car",
         "fuelType": "Petrol"
     },
@@ -34,8 +34,8 @@
         "chassisNumber": "12345678901234560",
         "owner": "Thivindu Paranayapa",
         "mobileNumber": "0777846523",
-        "model": "Audi",
-        "make": "A4",
+        "make": "Audi",
+        "model": "A4",
         "vehicleType": "Car",
         "fuelType": "Petrol"
     },
@@ -44,8 +44,8 @@
         "chassisNumber": "12345678901234561",
         "owner": "Tom Cat",
         "mobileNumber": "0777846523",
-        "model": "Kia",
-        "make": "Sorento",
+        "make": "Kia",
+        "model": "Sorento",
         "vehicleType": "SUV",
         "fuelType": "Diesel"
     },
@@ -54,8 +54,8 @@
         "chassisNumber": "12345678901234562",
         "owner": "Nimal Kumara",
         "mobileNumber": "0777846523",
-        "model": "Piaggio",
-        "make": "ThreeWheeler",
+        "make": "Piaggio",
+        "model": "ThreeWheeler",
         "vehicleType": "ThreeWheeler",
         "fuelType": "Petrol"
     },
@@ -64,9 +64,9 @@
         "chassisNumber": "12345678901234563",
         "owner": "Saman Amal",
         "mobileNumber": "0777735485",
-        "model": "Bajaj",
-        "make": "CT100",
-        "vehicleType": "Motorcycle",
+        "make": "Bajaj",
+        "model": "CT100",
+        "vehicleType": "MotorCycle",
         "fuelType": "Petrol"
     },
     {
@@ -74,8 +74,8 @@
         "chassisNumber": "12345678901234564",
         "owner": "Kasun Pavithra",
         "mobileNumber": "0711236008",
-        "model": "Tata",
-        "make": "TataLorry",
+        "make": "Tata",
+        "model": "TataLorry",
         "vehicleType": "Small Lorry",
         "fuelType": "Diesel"
     },
@@ -84,8 +84,8 @@
         "chassisNumber": "12345678901234565",
         "owner": "Nisanaya Pathirana",
         "mobileNumber": "0777846523",
-        "model": "DAF",
-        "make": "100-XF",
+        "make": "DAF",
+        "model": "100-XF",
         "vehicleType": "Container Truck",
         "fuelType": "Diesel"
     }
