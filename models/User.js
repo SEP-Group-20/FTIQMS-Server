@@ -39,9 +39,33 @@ const userSchema = mongoose.Schema({
         enum: [CUSTOMER, MANAGER, STAFF, ADMIN],
         default: CUSTOMER
     },
-    refreshToken: {
-        type: String,
-        default: ""
+    fuelStations: [
+        {
+          type: mongoose.Types.ObjectId,
+          ref: 'FuelStation'
+        }
+    ],
+    remainingPetrol: {
+        type: Number
+    },
+    remainingDiesel: {
+        type: Number
+    },
+    petrolAllocation: {
+        type: Number
+    },
+    dieselAllocation: {
+        type: Number
+    },
+    vehicles: [
+        {
+          type: mongoose.Types.ObjectId,
+          ref: 'Vehicle'
+        }
+    ],
+    refreshToken:{
+        type:String,
+        default:""
     }
 });
 const User = mongoose.model('User', userSchema);

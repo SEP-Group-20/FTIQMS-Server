@@ -1,0 +1,92 @@
+[
+    {
+        "registrationNumber": "301-0001",
+        "chassisNumber": "12345678901234567",
+        "owner": "Thivindu Paranayapa",
+        "mobileNumber": "0777846523",
+        "make": "Toyota",
+        "model": "Axio",
+        "vehicleType": "Car",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "JH-1234",
+        "chassisNumber": "12345678901234568",
+        "owner": "Ajith Paranayapa",
+        "mobileNumber": "0777735485",
+        "make": "Nissan",
+        "model": "Sunny",
+        "vehicleType": "Car",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "KO-9067",
+        "chassisNumber": "12345678901234569",
+        "owner": "Sriyani de Silva",
+        "mobileNumber": "0711236008",
+        "make": "Toyota",
+        "model": "Premio",
+        "vehicleType": "Car",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "CBF 8937",
+        "chassisNumber": "12345678901234560",
+        "owner": "Thivindu Paranayapa",
+        "mobileNumber": "0777846523",
+        "make": "Audi",
+        "model": "A4",
+        "vehicleType": "Car",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "KS-1932",
+        "chassisNumber": "12345678901234561",
+        "owner": "Tom Cat",
+        "mobileNumber": "0777846523",
+        "make": "Kia",
+        "model": "Sorento",
+        "vehicleType": "SUV",
+        "fuelType": "Diesel"
+    },
+    {
+        "registrationNumber": "AAF-4565",
+        "chassisNumber": "12345678901234562",
+        "owner": "Nimal Kumara",
+        "mobileNumber": "0777846523",
+        "make": "Piaggio",
+        "model": "ThreeWheeler",
+        "vehicleType": "ThreeWheeler",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "CCA 4562",
+        "chassisNumber": "12345678901234563",
+        "owner": "Saman Amal",
+        "mobileNumber": "0777735485",
+        "make": "Bajaj",
+        "model": "CT100",
+        "vehicleType": "MotorCycle",
+        "fuelType": "Petrol"
+    },
+    {
+        "registrationNumber": "BC-4285",
+        "chassisNumber": "12345678901234564",
+        "owner": "Kasun Pavithra",
+        "mobileNumber": "0711236008",
+        "make": "Tata",
+        "model": "TataLorry",
+        "vehicleType": "Small Lorry",
+        "fuelType": "Diesel"
+    },
+    {
+        "registrationNumber": "KL-1115",
+        "chassisNumber": "12345678901234565",
+        "owner": "Nisanaya Pathirana",
+        "mobileNumber": "0777846523",
+        "make": "DAF",
+        "model": "100-XF",
+        "vehicleType": "Container Truck",
+        "fuelType": "Diesel"
+    }
+]
