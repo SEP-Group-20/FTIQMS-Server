@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { EMAIL_REGEX, NAME_REGEX, MOBILE_REGEX, User } = require('../models/User');
 const ROLES_LIST = require('../utils/rolesList');
+const admin = require('../utils/firebaseAdminService');
 
 const SALT_ROUNDS = 9;
 
@@ -177,14 +178,69 @@ const logout = async (req, res) => {
     res.sendStatus(204);
 }
 
-const checkNIC = async (req,res)=>{
-    if(!req.body.NIC) return res.sendStatus(400);
+const checkNIC = async (req, res) => {
+    if (!req.body.NIC) return res.sendStatus(400);
 
     const result = await User.findOne({
         NIC: req.body.NIC
     });
-    if(!result) return res.json({success:true});
-    res.json({success:false});
+    if (!result) return res.json({ success: true });
+    res.json({ success: false });
 }
 
-module.exports = {registerCustomer,login,refresh,logout,checkNIC,customerLogin};
+const getMobileByNIC = async (req, res) => {
+    if (!req.body.NIC) return res.sendStatus(400);
+
+    const user = await User.findOne({
+        NIC: req.body.NIC
+    });
+    if (!user) return res.json({ success: false });
+    else {
+        return res.json({
+            success: true,
+            NIC: user.NIC,
+            mobile: user.mobile
+        });
+    }
+}
+
+const validateFirebaseAndLogin = async (req, res) => {
+    const firebaseToken = req.body.firebaseToken;
+    const NIC = req.body.NIC;
+    const user_id = req.body.user_id;
+    if (!firebaseToken || !NIC || !user_id) return res.sendStatus(400); //bad request
+    // console.log(req.body);
+
+    const user = await User
+        .findOne({ NIC: NIC });
+    if (!user) return res.sendStatus(401);
+
+    //validate firebase token here
+    try {
+        const decodeValue = await admin.auth().verifyIdToken(firebaseToken);
+        if (decodeValue && decodeValue.user_id === user_id) {
+            const accessToken = jwt.sign({
+                "userInfo": {
+                    "id": user._id,
+                    "role": user.role,   //5000 for users
+                    "NIC": user.NIC
+                }
+            }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
+
+            const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
+
+            user.refreshToken = refreshToken;
+            user.save();
+            res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+            res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
+        } else {
+            return res.sendStatus(401); //unauthorized
+        }
+    } catch (err) {
+        res.status(500).json(err.message);
+    }
+}
+
+
+
+module.exports = { registerCustomer, login, refresh, logout, checkNIC, customerLogin, getMobileByNIC, validateFirebaseAndLogin };
