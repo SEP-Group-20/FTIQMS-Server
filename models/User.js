@@ -45,17 +45,21 @@ const userSchema = mongoose.Schema({
           ref: 'FuelStation'
         }
     ],
-    remainingPetrol: {
-        type: Number
+    fuelAllocation: {
+        Petrol: {
+            type: Number
+        },
+        Diesel: {
+            type: Number
+        }
     },
-    remainingDiesel: {
-        type: Number
-    },
-    petrolAllocation: {
-        type: Number
-    },
-    dieselAllocation: {
-        type: Number
+    remainingFuel: {
+        Petrol: {
+            type: Number
+        },
+        Diesel: {
+            type: Number
+        }
     },
     vehicles: [
         {
