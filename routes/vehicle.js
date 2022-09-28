@@ -4,7 +4,8 @@ const vehicleController = require('../controllers/vehicleController');
 
 router.post("/checkVehicleRegistered", vehicleController.checkVehicleRegistered);
 router.post("/checkVehicleExistence", vehicleController.checkVehicleExistence);
-router.post("/getVehicleDetails", vehicleController.getVehicleDetails);
+router.post("/getVehicleDetailsDMT", vehicleController.getVehicleDetailsDMT);
+router.post("/getVehicleDetails/:vid", vehicleController.getVehicleDetails);
 router.post("/register", vehicleController.registerVehicle);
 
 module.exports = router;

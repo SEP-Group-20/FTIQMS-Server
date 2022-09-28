@@ -41,6 +41,8 @@ const registerCustomer = async (req, res) => {
         let user = _.pick(req.body, ["NIC", "firstName", "lastName", "mobile"]);
         user.password = hash;
         user.role = ROLES_LIST.CUSTOMER;
+        user["fuelAllocation"] = {"Petrol": 0, "Diesel": 0};
+        user["remainingFuel"] = {"Petrol": 0, "Diesel": 0};
 
         user = new User(user);
         res.status(201).send(_.pick(await user.save(), ["NIC", "_id", "firstName"]));

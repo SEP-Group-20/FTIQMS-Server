@@ -49,7 +49,7 @@ const checkVehicleExistence = async (req,res) => {
     res.json({mobileNum: vehicleDetails.mobileNumber});
 }
 
-const getVehicleDetails = async (req,res) => {
+const getVehicleDetailsDMT = async (req,res) => {
 
     if(!req.body.registrationNumber || !req.body.chassisNumber) return res.sendStatus(400);
 
@@ -83,10 +83,18 @@ const registerVehicle = async (req, res) => {
         const customer = await User.findOne({
             NIC: req.body.userNIC
         }).select({
-            vehicles: 1
+            vehicles: 1,
+            fuelAllocation: 1,
+            remainingFuel: 1
         });
 
         customer.vehicles.push(vehicleID._id);
+
+        const fuelType = vehicle.fuelType;
+        const fuelAllocation = parseInt(getFuelAllocation(vehicle.vehicleType));
+
+        customer.fuelAllocation[fuelType] += fuelAllocation;
+        customer.remainingFuel[fuelType] += fuelAllocation;
 
         await customer.save();
         await session.commitTransaction();
@@ -101,6 +109,36 @@ const registerVehicle = async (req, res) => {
         res.status(400).json({ "message": "Vehicle registraion failed" });
     }
 
+}
+
+const getVehicleDetails = async (req, res) => {
+
+    if(!req.params.vid) 
+        return res.sendStatus(400);
+
+    const customer = await User.findOne({
+        NIC: req.body.userNIC
+    }).select({
+        vehicles: 1
+    });
+
+    const isValidVehicle = customer.vehicles.includes(req.params.vid);
+
+    if (!isValidVehicle)
+      return res.json({success: false});
+
+    const result = await Vehicle.findOne({
+        _id:req.params.vid
+    });  
+
+    if (!result)
+        return res.json({success: false});
+    else{
+        return res.json({
+            success: true,
+            vehicle: result
+        });
+    }
 }
 
 const getFuelAllocationCategory = (vehicleType, fuelType) => {
@@ -136,4 +174,4 @@ const DMTGetVehicleDetails = async (registrationNumber, chassisNumber) => {
     return vehicle;
 }
 
-module.exports = {checkVehicleRegistered, checkVehicleExistence, getVehicleDetails, registerVehicle}
+module.exports = {checkVehicleRegistered, checkVehicleExistence, getVehicleDetailsDMT, registerVehicle, getVehicleDetails}
