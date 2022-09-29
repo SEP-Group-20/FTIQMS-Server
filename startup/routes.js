@@ -6,6 +6,7 @@ const authRouter = require('../routes/auth');
 const corsOptions = require('../utils/corsOptions');
 const userRouter = require("../routes/user");
 const vehicleRouter = require("../routes/vehicle");
+const customerRouter = require("../routes/customer");
 
 module.exports = (app) => {
     app.use(cors(corsOptions));
@@ -14,6 +15,7 @@ module.exports = (app) => {
     app.use("/api/auth", authRouter);
     app.use("/api/user",userRouter);
     app.use("/api/vehicle", vehicleRouter);
+    app.use("/api/customer", customerRouter);
 
     //error middleware
     app.use(errorMiddleware);

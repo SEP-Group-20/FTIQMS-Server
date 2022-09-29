@@ -141,6 +141,21 @@ const getVehicleDetails = async (req, res) => {
     }
 }
 
+const getVehicle = async (vid) => {
+    const result = await Vehicle.findOne({
+        _id:vid
+    });
+
+    if (!result)
+        return ({success: false});
+    else{
+        return ({
+            success: true,
+            vehicle: result
+        });
+    }
+}
+
 const getFuelAllocationCategory = (vehicleType, fuelType) => {
     if (fuelType === "Petrol") {
         fuelAllocationCategorization.Petrol.forEach(catergory => {
@@ -174,4 +189,4 @@ const DMTGetVehicleDetails = async (registrationNumber, chassisNumber) => {
     return vehicle;
 }
 
-module.exports = {checkVehicleRegistered, checkVehicleExistence, getVehicleDetailsDMT, registerVehicle, getVehicleDetails}
+module.exports = {checkVehicleRegistered, checkVehicleExistence, getVehicleDetailsDMT, getVehicle, registerVehicle, getVehicleDetails}
