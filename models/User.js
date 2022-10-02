@@ -30,7 +30,6 @@ const userSchema = mongoose.Schema({
     },
     mobile: {
         type: String,
-        required: true,
         pattern: MOBILE_REGEX
     },
     role: {
@@ -41,8 +40,8 @@ const userSchema = mongoose.Schema({
     },
     fuelStations: [
         {
-          type: mongoose.Types.ObjectId,
-          ref: 'FuelStation'
+            type: mongoose.Types.ObjectId,
+            ref: 'FuelStation'
         }
     ],
     fuelAllocation: {
@@ -63,13 +62,13 @@ const userSchema = mongoose.Schema({
     },
     vehicles: [
         {
-          type: mongoose.Types.ObjectId,
-          ref: 'Vehicle'
+            type: mongoose.Types.ObjectId,
+            ref: 'Vehicle'
         }
     ],
-    refreshToken:{
-        type:String,
-        default:""
+    refreshToken: {
+        type: String,
+        default: ""
     }
 });
 const User = mongoose.model('User', userSchema);
