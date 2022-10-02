@@ -5,4 +5,6 @@ const userController = require('../controllers/userController');
 router.post("/getUserByNIC", userController.getUserByNIC);
 router.post("/getUsername", userController.getUsername);
 router.post("/registerAdmin", userController.registerAdmin);
+router.post('/isEmailRegistered', userController.getUserByEmail);
+
 module.exports = router;

@@ -7,6 +7,7 @@ const corsOptions = require('../utils/corsOptions');
 const userRouter = require("../routes/user");
 const vehicleRouter = require("../routes/vehicle");
 const customerRouter = require("../routes/customer");
+const fuelStationRouter = require("../routes/fuelStation");
 
 module.exports = (app) => {
     app.use(cors(corsOptions));
@@ -16,6 +17,7 @@ module.exports = (app) => {
     app.use("/api/user",userRouter);
     app.use("/api/vehicle", vehicleRouter);
     app.use("/api/customer", customerRouter);
+    app.use("/api/fuelStation", fuelStationRouter);
 
     //error middleware
     app.use(errorMiddleware);

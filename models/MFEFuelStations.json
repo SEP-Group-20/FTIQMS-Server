@@ -1,0 +1,173 @@
+[
+    {
+        "registrationNumber": "ASD1234567",
+        "name": "Kumara Fuel Station",
+        "ownerFName": "Kumara",
+        "ownerLName": "Perera",
+        "mobileNumber": "0777846523",
+        "address": {
+            "No": "12/3",
+            "StreetName": "Galle road",
+            "Town": "Moratuwa",
+            "City": "Moratuwa",
+            "District": "Colombo"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 2,
+            "Diesel": 2
+        }
+    },
+    {
+        "registrationNumber": "QWE1267567",
+        "name": "Amal Fuel Station",
+        "ownerFName": "Amal",
+        "ownerLName": "Peris",
+        "mobileNumber": "0777735485",
+        "address": {
+            "No": "23/4",
+            "StreetName": "Pepiliyana road",
+            "Town": "Kohuwala",
+            "City": "Nugegoda",
+            "District": "Colombo"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 1,
+            "Diesel": 1
+        }
+    },
+    {
+        "registrationNumber": "ZXC3215467",
+        "name": "Nimal Fuel Station",
+        "ownerFName": "Nimal",
+        "ownerLName": "Gamage",
+        "mobileNumber": "0711236008",
+        "address": {
+            "No": "34/5",
+            "StreetName": "Marine drive",
+            "Town": "Wellawatta",
+            "City": "Wellawatta",
+            "District": "Colombo"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 4,
+            "Diesel": 4
+        }
+    },
+    {
+        "registrationNumber": "POI9067567",
+        "name": "Great Fuel Station",
+        "ownerFName": "Tom",
+        "ownerLName": "Cat",
+        "mobileNumber": "0777846523",
+        "address": {
+            "No": "15A",
+            "StreetName": "Galle road",
+            "Town": "Dehiwala",
+            "City": "Dehiwala",
+            "District": "Colombo"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 6,
+            "Diesel": 6
+        }
+    },
+    {
+        "registrationNumber": "YHN8906732",
+        "name": "Rural Fuel Station",
+        "ownerFName": "Kalu",
+        "ownerLName": "Some",
+        "mobileNumber": "0779007895",
+        "address": {
+            "No": "9",
+            "StreetName": "A9",
+            "Town": "Nalluru",
+            "City": "Jaffna",
+            "District": "Jaffna"
+        },
+        "fuelSold": ["Diesel"],
+        "fuelPumps": {
+            "Petrol": 0,
+            "Diesel": 1
+        }
+    },
+    {
+        "registrationNumber": "BNM0986789",
+        "name": "Nuwara Fuel Station",
+        "ownerFName": "Nuwara",
+        "ownerLName": "Nilame",
+        "mobileNumber": "0116789456",
+        "address": {
+            "No": "1/1",
+            "StreetName": "Kandy road",
+            "Town": "Perdeniya",
+            "City": "Peradeniya",
+            "District": "Kandy"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 2,
+            "Diesel": 2
+        }
+    },
+    {
+        "registrationNumber": "SDF0914562",
+        "name": "Ocean Fuel Station",
+        "ownerFName": "Kasun",
+        "ownerLName": "Pavithra",
+        "mobileNumber": "0775831590",
+        "address": {
+            "No": "8/0",
+            "StreetName": "Nikan road",
+            "Town": "Ambalangoda",
+            "City": "Ambalangoda",
+            "District": "Galle"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 1,
+            "Diesel": 1
+        }
+    },
+    {
+        "registrationNumber": "TYU9015190",
+        "name": "South Fuel Station",
+        "ownerFName": "Nisanya",
+        "ownerLName": "Pathirana",
+        "mobileNumber": "0772426488",
+        "address": {
+            "No": "527/Q",
+            "StreetName": "Katharagama road",
+            "Town": "Tangalle",
+            "City": "Tangalle",
+            "District": "Matara"
+        },
+        "fuelSold": ["Petrol"],
+        "fuelPumps": {
+            "Petrol": 2,
+            "Diesel": 0
+        }
+    },
+    {
+        "registrationNumber": "HBD1291047",
+        "name": "New Fuel Station",
+        "ownerFName": "Sanath",
+        "ownerLName": "Jayasuriya",
+        "mobileNumber": "0765439078",
+        "address": {
+            "No": "1",
+            "StreetName": "Main road",
+            "Town": "Ampara",
+            "City": "Ampara",
+            "District": "Ampara"
+        },
+        "fuelSold": ["Petrol", "Diesel"],
+        "fuelPumps": {
+            "Petrol": 4,
+            "Diesel": 4
+        }
+    }
+]
