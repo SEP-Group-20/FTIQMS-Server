@@ -5,6 +5,7 @@ const NAME_REGEX = /^[a-z ,.'-]+$/i;
 const MOBILE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\ -]\s*)?|[0]?)?[456789]\d{8}|(\d[ -]?){9}\d$/;
 // const NIC_REGEX = 
 
+//this schema specifies how a record in a database looks like
 const userSchema = mongoose.Schema({
     NIC: {
         type: String,
