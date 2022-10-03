@@ -9,11 +9,12 @@ const admin = require('../utils/firebaseAdminService');
 const SALT_ROUNDS = 9;
 
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+const NIC_REGEX =/^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
 
 /* this function validates the object that is passed to the parameter. */
 const validateCustomer = (user) => {
     const schema = Joi.object({
-        NIC: Joi.string().required(),
+        NIC: Joi.string().pattern(NIC_REGEX).required(),
         password: Joi.string().pattern(PWD_REGEX).required(),
         firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required(),
         lastName: Joi.string().min(1).max(50),
@@ -55,7 +56,7 @@ const registerCustomer = async (req, res) => {
         res.status(201).send(_.pick(await user.save(), ["NIC", "_id", "firstName"]));
 
     } else {
-        res.status(400).json({ "message": "AlreadyRegisteredNIC" });
+        res.status(401).json({ "message": "AlreadyRegisteredNIC" });
     }
 
 }
@@ -287,4 +288,4 @@ const validateFirebaseAndLogin = async (req, res) => {
 
 
 
-module.exports = { registerCustomer, login, refresh, logout, checkNIC, customerLogin, getMobileByNIC, validateFirebaseAndLogin };
+module.exports = { registerCustomer, login, refresh, logout, checkNIC, customerLogin, getMobileByNIC, validateFirebaseAndLogin, validateCustomer };
