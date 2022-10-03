@@ -6,15 +6,16 @@ const app = express();
 dotenv.config();
 
 require('./startup/validation');
-require('./startup/logging');
+require('./startup/logging')();
 require('./startup/routes')(app);
 require('./startup/db')();
-
 
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     logger.info("Listning to the PORT: " + PORT);
 });
+
+module.exports = app;
 
 
