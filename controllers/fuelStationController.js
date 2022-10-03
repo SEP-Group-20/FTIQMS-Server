@@ -6,7 +6,7 @@ const { User } = require('../models/User');
 const { startSession } = require('mongoose');
 const admin = require("../utils/firebaseAdminService");
 const ROLES_LIST = require('../utils/rolesList');
-
+const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
 
 const SALT_ROUNDS = 9;
@@ -108,12 +108,15 @@ const registerFuelStation = async (req, res) => {
         const ownerUID = _.pick(await manager.save(), ["_id"]);
 
         // extract the necessary details form the request and put them to the fuel station
+        const registrationNumber = req.body.fuelStationDetails.registrationNumber;
+        const email = req.body.email;
+
         let fuelStation = {};
-        fuelStation.registrationNumber = req.body.fuelStationDetails.registrationNumber;
+        fuelStation.registrationNumber = registrationNumber;
         fuelStation.name = req.body.fuelStationDetails.name;
         fuelStation.ownerFirstName = req.body.fuelStationDetails.ownerFName;
         fuelStation.ownerLastName = req.body.fuelStationDetails.ownerLName;
-        fuelStation.email = req.body.email;
+        fuelStation.email = email;
         fuelStation.address = req.body.fuelStationDetails.address;
         fuelStation.mobile = req.body.fuelStationDetails.mobileNumber;
         fuelStation.fuelSold = req.body.fuelStationDetails.fuelSold;
@@ -124,7 +127,20 @@ const registerFuelStation = async (req, res) => {
         // create new fuel station with the given details form the fuel station model
         fuelStation = new FuelStation(fuelStation);
 
-        // TODO : send the email to the fuel station manager with the email, registration number manager and staff passwords
+        // send the email to the fuel station manager with the email, registration number manager and staff passwords
+        await sendMail(
+            to = email,
+            subject = "Credentials For New Fuel Station Manager and Fuel Station Staff Accounts",
+            text = `New fuel station manager account credentials :-
+        email: ${email}
+        password: ${managerPassword}
+
+New fuel station staff account credentials :-
+        username: ${registrationNumber}
+        password: ${staffPassword}
+
+The fuel station manager must change the passwords on first login.`
+        );
 
         await session.commitTransaction(); // database update successful, commit the transaction
         session.endSession(); // end the session
