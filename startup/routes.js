@@ -10,9 +10,14 @@ const customerRouter = require("../routes/customer");
 const fuelStationRouter = require("../routes/fuelStation");
 
 module.exports = (app) => {
+    //to manage access to the API
     app.use(cors(corsOptions));
     app.use(express.json());
+
+    //to parse copkies for authorization purposes
     app.use(cookieParser());
+
+    //routes
     app.use("/api/auth", authRouter);
     app.use("/api/user",userRouter);
     app.use("/api/vehicle", vehicleRouter);
