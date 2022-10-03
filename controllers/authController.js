@@ -10,6 +10,7 @@ const SALT_ROUNDS = 9;
 
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
 
+/* this function validates the object that is passed to the parameter. */
 const validateCustomer = (user) => {
     const schema = Joi.object({
         NIC: Joi.string().required(),
@@ -21,14 +22,17 @@ const validateCustomer = (user) => {
     return schema.validate(user)
 }
 
+/*This is controller for handling costomer registration */
 const registerCustomer = async (req, res) => {
 
+    //first validate request body and reject the request with status code 400 if vallidation fails
     const { error } = validateCustomer(req.body);
     if (error) {
         res.status(400).send(error);
         return
     }
 
+    //check whether NIC is already registered in the system
     const alreadyRegistered = await User.findOne({
         NIC: req.body.NIC
     }).select({
@@ -36,14 +40,17 @@ const registerCustomer = async (req, res) => {
     });
 
     if (!alreadyRegistered) {
+        //here hash the password
         const hash = await bcrypt.hash(req.body.password, SALT_ROUNDS);
 
         let user = _.pick(req.body, ["NIC", "firstName", "lastName", "mobile"]);
         user.password = hash;
         user.role = ROLES_LIST.CUSTOMER;
+        //specify initial fuel allocation
         user["fuelAllocation"] = {"Petrol": 0, "Diesel": 0};
         user["remainingFuel"] = {"Petrol": 0, "Diesel": 0};
 
+        //create user object according to the details
         user = new User(user);
         res.status(201).send(_.pick(await user.save(), ["NIC", "_id", "firstName"]));
 
@@ -53,21 +60,29 @@ const registerCustomer = async (req, res) => {
 
 }
 
+/*this is login funtionality for the users other than the customers */
 const login = async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
+
+    //if email or password is missing reject request with 400 status code
     if (!email || !password) return res.sendStatus(400); //bad request
 
+    //find the user from email address
     const user = await User
         .findOne({ email: email })
         .select({ email: 1, password: 1, role: 1 });
+    // if user not found reject request with 401 status code
     if (!user) return res.sendStatus(401);
 
+    //compare the stored password and password which is entered by the user
     const result = await bcrypt.compare(password, user.password);
 
     if (!result) {
+        //if passwords don't match reject the request with 401 status code
         return res.sendStatus(401);
     } else {
+        //if passwords match, then crete access token
         const accessToken = jwt.sign({
             "userInfo": {
                 "id": user._id,
@@ -76,10 +91,13 @@ const login = async (req, res) => {
             }
         }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
+        // create refresh token which is used to refresh access token
         const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
 
+        //save refresh token to database
         user.refreshToken = refreshToken;
         user.save();
+        //send refresh token as http-only cokies
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['email', '_id', 'role']) });
 
@@ -91,16 +109,19 @@ const customerLogin = async (req, res) => {
     const password = req.body.password;
     if (!NIC || !password) return res.sendStatus(400); //bad request
 
+    //find user by the NIC
     const user = await User
         .findOne({ NIC: NIC })
         .select({ NIC: 1, password: 1, role: 1 });
     if (!user) return res.sendStatus(401);
 
+    //compare two passwords
     const result = await bcrypt.compare(password, user.password);
 
     if (!result) {
         return res.sendStatus(401);
     } else {
+        //create access token which is used to access the API
         const accessToken = jwt.sign({
             "userInfo": {
                 "id": user._id,
@@ -109,24 +130,32 @@ const customerLogin = async (req, res) => {
             }
         }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
+        //create refresh token which is used to refresh the access token
         const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
 
+        //save refresh token in the datadase
         user.refreshToken = refreshToken;
         user.save();
+        
+        //send refresh token to user as a http-only cokie
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
 
     }
 }
 
+/*this function is to get new access token when it is expired. TO obtain
+new access token, validation of refresh token is needed */
 const refresh = async (req, res) => {
+    //access request cookies for the access token
     const cookies = req.cookies;
-    // console.log(cookies)
-    // console.log('came for token');
+
+    //if jwt is not in the cookies, or role is not there, the request will be rejected
     if (!cookies?.jwt || !req.params.role) return res.sendStatus(401);
     // console.log(cookies.jwt);
     const refreshToken = cookies.jwt;
 
+    //
     const user = await User
         .findOne({ refreshToken: refreshToken, role: req.params.role })
         .select({ _id: 1, role: 1 });
@@ -135,7 +164,6 @@ const refresh = async (req, res) => {
     // here you need to check the wethear there is a refreshtoken in a database
     //if not return with statuscode 403
     //and also you need to get the role of the user
-
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decode) => {
         if (err) return res.sendStatus(403);
@@ -180,6 +208,8 @@ const logout = async (req, res) => {
     res.sendStatus(204);
 }
 
+
+/*This piece of funtion checks whether given NIC exists in the database */
 const checkNIC = async (req, res) => {
     if (!req.body.NIC) return res.sendStatus(400);
 
@@ -190,6 +220,8 @@ const checkNIC = async (req, res) => {
     res.json({ success: false });
 }
 
+/*This piece of function returns the mobile number for given NIC, if NIC exists.
+Otherwise send the false success */
 const getMobileByNIC = async (req, res) => {
     if (!req.body.NIC) return res.sendStatus(400);
 
@@ -206,6 +238,9 @@ const getMobileByNIC = async (req, res) => {
     }
 }
 
+/*In the OTP login method, customer is authenticated based on mobile number in the front end. A firebase access token 
+is given to the customer once he is authenticated using firebase. This function issues an access token and a refresh token to the 
+customer after validating the firebase access token*/
 const validateFirebaseAndLogin = async (req, res) => {
     const firebaseToken = req.body.firebaseToken;
     const NIC = req.body.NIC;
@@ -220,7 +255,10 @@ const validateFirebaseAndLogin = async (req, res) => {
     //validate firebase token here
     try {
         const decodeValue = await admin.auth().verifyIdToken(firebaseToken);
+
+        // this checks whether user id is matching
         if (decodeValue && decodeValue.user_id === user_id) {
+            //create new access token
             const accessToken = jwt.sign({
                 "userInfo": {
                     "id": user._id,
@@ -229,10 +267,14 @@ const validateFirebaseAndLogin = async (req, res) => {
                 }
             }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
+            //create new refresh token
             const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
 
+            //save refresh token in the database
             user.refreshToken = refreshToken;
             user.save();
+
+            //send the refresh token to user as a http-only cookie
             res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
             res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
         } else {
