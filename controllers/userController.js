@@ -1,8 +1,10 @@
 const { User } = require('../models/User');
 const _ = require('lodash');
+const bcrypt = require('bcrypt');
 const { ADMIN } = require("../utils/rolesList");
+const pwdGenerator = require('generate-password');
 const sendMail = require("../utils/emailService");
-
+const SALT_ROUNDS = 9;
 
 // get details of a user given the NIC
 const getUserByNIC = async (req, res) => {
@@ -56,14 +58,30 @@ const getUsername = async (req, res) => {
     }
 }
 
+/*This function is to generate a password accourdig to the password policies */
+const generatePWD = () => {
+    return pwdGenerator.generate({
+        length: 10,
+        numbers: true,
+        symbols: true,
+        lowercase: true,
+        uppercase: true,
+        strict: true
+    });
+}
 
+
+/* this is the controller for adding new admin to the databse and 
+sending their credentials to newly entered email address */
 const registerAdmin = async (req, res) => {
     const email = req.body.email;
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
 
+    // if one or more fields are missing in the body, the request will be rejected with the status code 400.
     if (!email || !firstName || !lastName) return res.sendStatus(400);
 
+    //checking whether email is already there in the users collection
     const result = await User.findOne({
         email: email
     });
@@ -71,8 +89,19 @@ const registerAdmin = async (req, res) => {
 
     const user = new User({ email, firstName, lastName });
     user.role = ADMIN;
-    user.password = "DefaultPWD1";
-    await sendMail(to = email, subject = "THis is the sub", text = "first email!");
+
+    //here generate a new password for new admin account
+    const pwd = generatePWD();
+    console.log(pwd);
+
+    // here hash the password before store in the database
+    const hash = await bcrypt.hash(pwd, SALT_ROUNDS);
+    user.password = hash;
+
+    //send credetoals contained email to the new email account 
+    await sendMail(to = email, subject = "Credentials For New Admin Account", text = `New admin account username: ${email} and password: ${pwd}.`);
+
+    //send the response to the user
     res.status(201).send(_.pick(await user.save(), ["_id"]));
 }
 
