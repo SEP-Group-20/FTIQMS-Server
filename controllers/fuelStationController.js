@@ -40,9 +40,10 @@ const checkFuelStationExistence = async (req,res) => {
     // if such a fuel station cannot be found, the fuel station is not registered in the MFE, send a failure flag as the response
     if(!fuelStationDetails)
         res.json({success:false});
+    else 
+        // fuel station is registered in the MFE, send a success flag as the response
+        return res.json({success:true});    
 
-    // fuel station is registered in the MFE, send a success flag as the response
-    return res.json({success:true});
 }
 
 // get the details of the fuel station from the MFE database given the registration number
@@ -142,6 +143,7 @@ New fuel station staff account credentials :-
 The fuel station manager must change the passwords on first login.`
         );
 
+        await fuelStation.save(); // save the new fuel station in the database
         await session.commitTransaction(); // database update successful, commit the transaction
         session.endSession(); // end the session
 
