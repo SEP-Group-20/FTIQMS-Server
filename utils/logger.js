@@ -1,9 +1,12 @@
 const {format, transports, createLogger ,} = require('winston');
 require('winston-mongodb');
+const config = require('config');
 const path = require('path');
 
+//specifies logging format
 const logFormat = format.printf(info => `${info.timestamp} ${info.level} [${info.label}]: ${info.message}`);
 
+// this specifies logging configuration
 const logConfiguration = {
     format: format.combine(
         format.label({ label: path.basename(process.mainModule.filename) }),
@@ -25,7 +28,7 @@ const logConfiguration = {
             )
         }),
         new transports.MongoDB({
-            db:'mongodb://localhost/shopsnet',
+            db:config.DB,
             level:"error",
             options:{
                 useUnifiedTopology:true
@@ -34,6 +37,7 @@ const logConfiguration = {
     ]
 }
 
+//this is the format and the configuration for unhandledExceptions 
 const unhandledExceptionLogConfiguration = {
     format: format.combine(
         format.label({ label: path.basename(process.mainModule.filename) }),
