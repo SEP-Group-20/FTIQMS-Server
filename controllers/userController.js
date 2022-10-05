@@ -51,28 +51,52 @@ const getUserByEmail = async (req, res) => {
 }
 
 // get the full name of a user given the NIC
+const getUsernameByNIC = async (NIC) => {
+    // get the logged in user's firstname and lastname using the customer's NIC number from the database
+    const result = await User.findOne({
+        NIC: NIC
+    }).select({
+        firstName: 1,
+        lastName: 1
+    });
+    return result;
+}
+
+// get the full name of a user given the eamil
+const getUsernameByEmail = async (email) => {
+    // get the logged in user's firstname and lastname using the user's email from the database
+    const result = await User.findOne({
+        email: email
+    }).select({
+        firstName: 1,
+        lastName: 1
+    });
+    return result;
+}
+
+// get the full name of a user given the NIC or eamil
 const getUsername = async (req, res) => {
     // if NIC number is not send send a error response
     if (!req.body.userNIC && !req.body.userEmail)
         return res.sendStatus(400);
 
-    // get the logged in user's firstname and lastname using the customer's NIC number from the database
-    const result = await User.findOne({ $or: [
-        {NIC: req.body.userNIC},
-        {email: req.body.userEmail}
-    ]}).select({
-        firstName: 1,
-        lastName: 1
-    });
+    let username = {}
+    
+    if (req.body.userNIC)
+        username = await getUsernameByNIC(req.body.userNIC);
+
+    // get the logged in user's firstname and lastname using the users's email from the database
+    if (req.body.userEmail)
+        username = await getUsernameByEmail(req.body.userEmail);
 
     // if user's names retrival is a failure send a error flag as the response
-    if (!result)
+    if (!username)
         return res.json({ success: false });
     else {
         // send the names along with a success flag as the response
         return res.json({
             success: true,
-            user: result
+            user: username
         });
     }
 }
