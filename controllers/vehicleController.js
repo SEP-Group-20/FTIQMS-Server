@@ -93,7 +93,7 @@ const getVehicleDetailsDMT = async (req,res) => {
 const registerVehicle = async (req, res) => {
     // start a seesion to enable transactions in the database
     const session = await startSession();
-    // sessions not working
+    // FIXME: sessions not working
     try {
         // start transction
         // because we need to ensure ACID properties when entering data to multiple models
@@ -256,4 +256,11 @@ const DMTGetVehicleDetails = async (registrationNumber, chassisNumber) => {
     return vehicle;
 }
 
-module.exports = {checkVehicleRegistered, checkVehicleExistence, getVehicleDetailsDMT, getVehicle, registerVehicle, getVehicleDetails}
+module.exports = {
+    checkVehicleRegistered,
+    checkVehicleExistence,
+    getVehicleDetailsDMT,
+    getVehicle,
+    registerVehicle,
+    getVehicleDetails
+}
