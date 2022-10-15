@@ -91,6 +91,16 @@ const fuelStationSchema = mongoose.Schema({
             default: 0
         }
     },
+    fuelAvailability: {
+        Petrol: {
+            type: Boolean,
+            default: false
+        },
+        Diesel: {
+            type: Boolean,
+            default: false
+        }
+    },
     fuelQueue: {
         Petrol: [
             {

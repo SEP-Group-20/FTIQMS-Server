@@ -129,7 +129,7 @@ const customerLogin = async (req, res) => {
                 "role": user.role,   //5000 for users
                 "NIC": user.NIC
             }
-        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3000s' });
 
         //create refresh token which is used to refresh the access token
         const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
@@ -288,4 +288,14 @@ const validateFirebaseAndLogin = async (req, res) => {
 
 
 
-module.exports = { registerCustomer, login, refresh, logout, checkNIC, customerLogin, getMobileByNIC, validateFirebaseAndLogin, validateCustomer };
+module.exports = {
+    registerCustomer,
+    login,
+    refresh,
+    logout,
+    checkNIC,
+    customerLogin,
+    getMobileByNIC,
+    validateFirebaseAndLogin,
+    validateCustomer
+};
