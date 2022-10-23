@@ -1,7 +1,7 @@
 const { User } = require('../models/User');
 const _ = require('lodash');
 const bcrypt = require('bcrypt');
-const { ADMIN } = require("../utils/rolesList");
+const { ADMIN, MANAGER } = require("../utils/rolesList");
 const pwdGenerator = require('generate-password');
 const sendMail = require("../utils/emailService");
 const SALT_ROUNDS = 9;
@@ -147,5 +147,44 @@ const registerAdmin = async (req, res) => {
     res.status(201).send(_.pick(await user.save(), ["_id"]));
 }
 
-module.exports = { getUserByNIC, getUsername, getUserByEmail, registerAdmin }
+// get details of all the admins in the system
+const getAllAdmins = async (req, res) => {
+    currentUserEmail = req.body.userEmail
+
+    // get all admin users of the system from the database
+    const result = await User.find({
+        role: ADMIN
+    })
+
+    // if all admin detail retrival is successful send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        allAdminDetails: result
+    });
+}
+
+// get details of all the fuel station managers in the system
+const getAllFSMs = async (req, res) => {
+    currentUserEmail = req.body.userEmail
+
+    // get all fuel station manager users of the system from the database
+    const result = await User.find({
+        role: MANAGER
+    })
+
+    // if all fuel station manager detail retrival is successful send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        allFSMDetails: result
+    });
+}
+
+module.exports = { 
+    getUserByNIC,
+    getUsername,
+    getUserByEmail,
+    registerAdmin, 
+    getAllAdmins,
+    getAllFSMs
+}
 

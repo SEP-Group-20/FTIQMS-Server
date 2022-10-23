@@ -147,48 +147,6 @@ const registerFuelDelivery= async (req, res) => {
 
 }
 
-// EDIT THE FUNCTION TO GET THE DETAILS OF THE FUEL ORDER
-
-// get the details of the fuel station from the system database given the fuel station id.
-// return the details of the fuel station or an error
-const getFuelDeliveryDetails = async (req, res) => {
-
-    // if fuel station id is not set send a error response
-    if(!req.params.vid) 
-        return res.sendStatus(400);
-
-    // get the logged in customer's vehicle list using the customer's NIC number from the database
-    const customer = await User.findOne({
-        NIC: req.body.userNIC
-    }).select({
-        vehicles: 1
-    });
-
-    // check if the vehicle corresponding to the given vehicle id is registered under the logged in customer
-    // check the vehicle id is in the vehicle list of the customer
-    const isValidVehicle = customer.vehicles.includes(req.params.vid);
-
-    // if vehicle id is not in the vehicle list of the customer, fraudulent request, send failure message as the response
-    if (!isValidVehicle)
-      return res.json({success: false});
-
-    // if vehicle is valid get the details of it from the database using the vehicle id
-    const result = await Vehicle.findOne({
-        _id:req.params.vid
-    });  
-
-    // if such a vehicle details cannot be retirved, send failure flag as the response
-    if (!result)
-        return res.json({success: false});
-    else{
-        // if vehicle details are retirved, send the details of it and a success flag as the response
-        return res.json({
-            success: true,
-            vehicle: result
-        });
-    }
-}
-
 // Dummy MFE fuel order API connected to a MFEFuelOrders.json file to simulate the process
 // returns fuel order details if fuel order registered in the MFE else sends false
 const MFEGetFuelOrderDetails = async (orderID, deliveryID, registrationNumber) => {
@@ -204,9 +162,31 @@ const MFEGetFuelOrderDetails = async (orderID, deliveryID, registrationNumber) =
     return fuelOrder;
 }
 
+// get the details of the fuel order from the system database given the fuel order id.
+// return the details of the fuel order or an error
+// called by the fuel station controller so no request or response to or from the frontend
+const getFuelDelivery = async (fdid) => {
+    // get the details of the fuel order from the database using the fuel order id
+    const result = await FuelOrder.findOne({
+        _id:fdid
+    });
+
+    // if such a fuel order details cannot be retirved, send failure flag as the response
+    if (!result)
+        return ({success: false});
+    else{
+        // if fuel order details are retirved, send the details of it and a success flag as the response
+        return ({
+            success: true,
+            fuelDelivery: result
+        });
+    }
+}
+
 module.exports = {
     checkFuelDeliveryRegistered,
     checkFuelOrderExistence,
     getFuelOrderDetailsMFE,
-    registerFuelDelivery,getFuelDeliveryDetails
+    registerFuelDelivery,
+    getFuelDelivery
 }

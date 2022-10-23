@@ -10,5 +10,6 @@ router.post("/getFuelStationDetails/:fid", fuelStationController.getFuelStationD
 router.post("/getFuelDetails", fuelStationController.getFuelDetails);
 router.post("/setFuelStatus", fuelStationController.setFuelStatus);
 router.post("/register", fuelStationController.registerFuelStation);
+router.post("/getAllFuelDeliveryDetails", fuelStationController.getAllFuelDeliveries);
 
 module.exports = router;
