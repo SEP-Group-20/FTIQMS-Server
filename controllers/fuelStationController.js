@@ -7,6 +7,7 @@ const { startSession } = require('mongoose');
 const ROLES_LIST = require('../utils/rolesList');
 const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
+const { getFuelDelivery } = require('./fuelOrderController');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = {"Petrol": 100, "Diesel": 100};
@@ -187,7 +188,7 @@ const getFuelStationRegistrationNumber = async (req, res) => {
     }
 }
 
-// EDIT THE FUNCTION TO EGT THE FUEL STATION DETAILS
+// TODO: EDIT THE FUNCTION TO EGT THE FUEL STATION DETAILS
 
 // get the details of the fuel station from the system database given the fuel station id.
 // return the details of the fuel station or an error
@@ -320,6 +321,36 @@ const MFEGetFuelStationDetails = async (registrationNumber) => {
     return fuelStation;
 }
 
+// get details of all the fuel deliveries of a fuel station
+const getAllFuelDeliveries = async (req, res) => {
+    // get the logged in fuel station's  fuel delivery list using the fuel station email from the database
+    const fuelStation = await FuelStation.findOne({
+        email: req.body.userEmail
+    }).select({
+        fuelOrders: 1
+    });
+
+    const fuelDeliveryDetailsList = [];
+
+    // for each fuel delivery get the details of it using the fuel delivery id
+    for (const fdid of fuelStation.fuelOrders) {
+        // get fuel delivery details by calling the function in the fuel order controller
+        const fuelDelivery = await getFuelDelivery(fdid.toString());
+        
+        // check if fuel delivery details retrival is successful
+        if (fuelDelivery.success)
+            fuelDeliveryDetailsList.push(fuelDelivery.fuelDelivery); // if successful add the fuel delivery details to the list
+        else
+            return res.json({success: false}); // if even one fuel delivery details retrival is a failure stop and send a error status
+      }
+
+    // if all fuel delivery detail retrival is successful send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        allFuelDeliveryDetails: fuelDeliveryDetailsList
+    });
+}
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -328,5 +359,6 @@ module.exports = {
     getFuelStationRegistrationNumber,
     getFuelStationDetails,
     getFuelDetails,
-    setFuelStatus
+    setFuelStatus,
+    getAllFuelDeliveries
 }
