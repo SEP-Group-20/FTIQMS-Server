@@ -351,6 +351,31 @@ const getAllFuelDeliveries = async (req, res) => {
     });
 }
 
+// get the fuel queue of a fuel station corresponding to the fuel
+const getFuelQueue = async (fuelStationID, fuel) => {
+
+    // get the fuel queue using the fuel station registration number from the database
+    const fuelStation = await FuelStation.findOne({
+        _id: fuelStationID
+    }).select({
+        fuelPumps:1,
+        fuelQueue: 1
+    });
+
+    // if there is no such fuel station registered in the system send false
+    if(!fuelStation)
+        return false;
+        
+    // fuel station is registered in the system, send the fuel queue, fuel, number of fuel pumps corresponding to the fuel
+    const fuelStationDetails = {
+        "fuel": fuel,
+        "fuelPumps": fuelStation.fuelPumps[fuel],
+        "fuelQueue": fuelStation.fuelQueue[fuel]
+    }
+
+    return fuelStationDetails;
+}
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -360,5 +385,6 @@ module.exports = {
     getFuelStationDetails,
     getFuelDetails,
     setFuelStatus,
-    getAllFuelDeliveries
+    getAllFuelDeliveries,
+    getFuelQueue
 }

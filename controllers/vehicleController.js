@@ -1,8 +1,10 @@
 const _ = require('lodash');
 const { Vehicle } = require('../models/Vehicle');
 const { User } = require('../models/User');
-const { startSession } = require('mongoose')
+const { startSession, Types } = require('mongoose')
 const DMTVehicles = require('../models/DMTVehicles.json');
+const { getFuelQueue } = require('./fuelStationController');
+const { FuelStation } = require('../models/FuelStation');
 
 // fuel allocation category based on vehicle type
 const fuelAllocationCategorization = {
@@ -100,7 +102,7 @@ const registerVehicle = async (req, res) => {
         session.startTransaction();
 
         // extract the necessary details form the request and put them to the vehicle
-        let vehicle = _.pick(req.body, ["registrationNumber", "chassisNumber", "owner", "make", "model", "fuelType", "vehicleType"]);
+        let vehicle = _.pick(req.body, ["registrationNumber", "chassisNumber", "owner", "make", "model", "fuelType", "vehicleType", "registeredUnder"]);
 
         // create new vehicle with the given details form the vehicle model
         vehicle = new Vehicle(vehicle);
@@ -108,7 +110,7 @@ const registerVehicle = async (req, res) => {
         // save the vehicle in the database and get the database _id of the newly added vehicle
         const vehicleID = _.pick(await vehicle.save(), ["_id"]);
 
-        // get the vehicle list, fuel alloacation, remaining fuel of customer using thier NIC
+        // get the vehicle list, fuel alloacation, remaining fuel of customer using their NIC
         const customer = await User.findOne({
             NIC: req.body.userNIC
         }).select({
@@ -256,11 +258,139 @@ const DMTGetVehicleDetails = async (registrationNumber, chassisNumber) => {
     return vehicle;
 }
 
+// assign vehicle to a suitable fuel queue of the chosen fuel stations
+const assignFuelQueue = async (req, res) => {
+    // start a seesion to enable transactions in the database
+    const session = await startSession();
+    // FIXME: sessions not working
+
+    // if registration number of vehicle or user nic is not set send a error response
+    if(!req.body.fuelRequestVehicle || !req.body.userNIC) return res.sendStatus(400);
+
+    try {
+        // start transction
+        // because we need to ensure ACID properties when entering data to multiple models
+        session.startTransaction();
+
+        // get the logged in customer's fuel station list and remaining fuel using the customer's NIC number from the database
+        const customer = await User.findOne({
+            NIC: req.body.userNIC
+        }).select({
+            fuelStations: 1,
+            remainingFuel: 1
+        });
+
+        // if such a customer details cannot be retirved, send failure flag as the response
+        if (!customer)
+            return res.json({
+                success: false,
+                message: "No such customer for the given NIC"
+            });
+        else {
+            // get the vehicle's vid and fuel using the vehicle's registration number from the database
+            const vehicle = await Vehicle.findOne({
+                registrationNumber: req.body.fuelRequestVehicle
+            }).select({
+                _id: 1,
+                fuelType: 1,
+                isQueued: 1,
+                notificationsSent: 1
+            });
+            // if such a vehicle details cannot be retirved, send failure flag as the response
+            if (!vehicle)
+                return res.json({
+                    success: false,
+                    message: "No such vehicle for the given registration number"
+                });
+            else {
+                const fuelType = vehicle.fuelType; // get fuel type of the vehicle
+                const fuelStationList = customer.fuelStations; // get fuel station list of the customer
+                // check if the customer has selected fuel stations
+                if (fuelStationList.length) {
+                    if (customer.remainingFuel[fuelType] > 0) {
+                        let fuelStationeDetails = {}
+                        // get the fuel queues, number of fuel pumps of each fuel station
+                        for (let index = 0; index < fuelStationList.length; index++) {
+                            const id = fuelStationList[index].toString();
+                            fuelStationeDetails[id] = await getFuelQueue(id, fuelType)
+                        }
+
+                        const selectedFuelStation = selectFuelStation(fuelStationeDetails).toString(); // find the best fuel station
+
+                        // get the fuel station queue using the fuel station's id from the database
+                        const fuelStation = await FuelStation.findOne({
+                            _id: selectedFuelStation
+                        }).select({
+                            fuelQueue: 1
+                        });
+
+                        // add the vehicle to the relavent queue
+                        fuelStation.fuelQueue[fuelType].push(Types.ObjectId(vehicle._id));
+                        // update vehicle status
+                        vehicle.isQueued = true;
+                        vehicle.notificationsSent = 0;
+                        
+                        await fuelStation.save(); // save the updated fuel station in the database
+                        await vehicle.save(); // save the updated vehicle in the database
+                        await session.commitTransaction(); // database update successful, commit the transaction
+                        session.endSession(); // end the session
+                
+                        // vehicle registration successful
+                        res.status(201).json({success: true}); // send success message as the response                        
+                    }
+                    else {
+                        // customer does not have enough fuel
+                        return res.json({
+                            success: false,
+                            message: "Fuel quota exhausted stations added"
+                        });
+                    }
+                }
+                else {
+                    // customer has not selected fuel stations send an error response
+                    return res.json({
+                        success: false,
+                        message: "No fuel stations added"
+                    });
+                }
+
+            }
+        }
+    } catch (error) {
+        // error happens in the transaction
+        await session.abortTransaction(); // abort the transaction and rollback changes
+        session.endSession(); // end the session
+
+        // fuel request unsuccessful
+        res.status(400).json({success: false, message: "Fuel request failed" });// send failure message as the response
+    }
+
+}
+
+// get the best fuel station that the vehicle should be queued to
+const selectFuelStation = (fuelStations) => {
+    const fuelStation_ratio = {}
+    // iterate over the fuel stations and calculate the ratio between fuel queue length and number of fuel pumps
+    for (fuelStation in fuelStations){
+        let queueLength = fuelStations[fuelStation].fuelQueue.length; // get length of the fuel queue of the fuel station
+        let fuelPumpNum = fuelStations[fuelStation].fuelPumps; // get the number of fuel pumps of the fuel station
+        let queueToFuelPumpRatio = queueLength/fuelPumpNum; // calculate ratio between fuel queue length and number of fuel pumps
+        fuelStation_ratio[fuelStation] = queueToFuelPumpRatio; // add the fuel station ratio pair to a object
+    }
+
+    // get the fuel station with the minimum ratio between fuel queue length and number of fuel pumps
+    let selectedFuelStation = Object.keys(fuelStation_ratio).reduce((key, v) => 
+        fuelStation_ratio[v] < fuelStation_ratio[key] ? v : key);
+
+    return selectedFuelStation
+}
+
 module.exports = {
     checkVehicleRegistered,
     checkVehicleExistence,
     getVehicleDetailsDMT,
     getVehicle,
     registerVehicle,
-    getVehicleDetails
+    getVehicleDetails,
+    assignFuelQueue
 }
