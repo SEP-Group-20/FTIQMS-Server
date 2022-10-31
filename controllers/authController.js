@@ -9,7 +9,7 @@ const admin = require('../utils/firebaseAdminService');
 const SALT_ROUNDS = 9;
 
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-const NIC_REGEX =/^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
+const NIC_REGEX = /^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
 
 /* this function validates the object that is passed to the parameter. */
 const validateCustomer = (user) => {
@@ -48,8 +48,8 @@ const registerCustomer = async (req, res) => {
         user.password = hash;
         user.role = ROLES_LIST.CUSTOMER;
         //specify initial fuel allocation
-        user["fuelAllocation"] = {"Petrol": 0, "Diesel": 0};
-        user["remainingFuel"] = {"Petrol": 0, "Diesel": 0};
+        user["fuelAllocation"] = { "Petrol": 0, "Diesel": 0 };
+        user["remainingFuel"] = { "Petrol": 0, "Diesel": 0 };
 
         //create user object according to the details
         user = new User(user);
@@ -129,7 +129,7 @@ const customerLogin = async (req, res) => {
                 "role": user.role,   //5000 for users
                 "NIC": user.NIC
             }
-        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3000s' });
+        }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
         //create refresh token which is used to refresh the access token
         const refreshToken = jwt.sign({ "id": user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '1d' });
@@ -137,7 +137,7 @@ const customerLogin = async (req, res) => {
         //save refresh token in the datadase
         user.refreshToken = refreshToken;
         user.save();
-        
+
         //send refresh token to user as a http-only cokie
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
@@ -157,9 +157,12 @@ const refresh = async (req, res) => {
     const refreshToken = cookies.jwt;
 
     //
-    const user = await User
+    var user = (parseInt(req.params.role) === ROLES_LIST.CUSTOMER) ? await User
         .findOne({ refreshToken: refreshToken, role: req.params.role })
-        .select({ _id: 1, role: 1 });
+        .select({ _id: 1, role: 1, NIC: 1 })
+        : await User
+            .findOne({ refreshToken: refreshToken, role: req.params.role })
+            .select({ _id: 1, role: 1, email: 1 });
     if (!user) return res.status(403).json({ "message": "Invalid token" });
 
     // here you need to check the wethear there is a refreshtoken in a database
@@ -171,7 +174,9 @@ const refresh = async (req, res) => {
         const accessToken = jwt.sign({
             "userInfo": {
                 "id": user._id,
-                "role": req.params.role       //for now it is  for registeredUsers
+                "role": parseInt(req.params.role),       //for now it is  for registeredUsers
+                "NIC": user.NIC,
+                "email": user.email
             }
         }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: '300s'
