@@ -408,5 +408,5 @@ module.exports = {
     setFuelStatus,
     getAllFuelDeliveries,
     getFuelStationLocation,
-    setFuelStationLocation
+    setFuelStationLocation,
 }

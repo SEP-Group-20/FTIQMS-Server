@@ -23,7 +23,7 @@ const getUserByNIC = async (req, res) => {
         // and send only those in the response with a success flag
         return res.json({
             success: true,
-            user: _.pick(result, ["NIC", "firstName", "lastName", "mobile"])
+            user: _.pick(result, ["_id", "NIC", "firstName", "lastName", "mobile"])
         });
     }
 }
