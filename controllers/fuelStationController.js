@@ -352,7 +352,6 @@ const getAllFuelDeliveries = async (req, res) => {
     });
 }
 
-
 const OIdValidationSchema = Joi.object({
     managerId: Joi.objectId().required()
 });
@@ -360,43 +359,42 @@ const OIdValidationSchema = Joi.object({
 /*this function responses with the location of the fuel station */
 const getFuelStationLocation = async (req, res) => {
 
-    OIdValidationSchema.validate({managerId: req.params.managerId});
+    OIdValidationSchema.validate({ managerId: req.params.managerId });
 
     //if no fuel station id send status code badRequest
-    if(! req.params.managerId) return res.sendStatus(400);
+    if (!req.params.managerId) return res.sendStatus(400);
 
     //query database for the location
-    const station = await FuelStation.findOne({ ownerUID : req.params.managerId})
-    .select({location: 1});
+    const station = await FuelStation.findOne({ ownerUID: req.params.managerId })
+        .select({ location: 1 });
 
     //send query results
     return res.json({
         location: station?.location
     });
+}
 
-// get the fuel queue of a fuel station corresponding to the fuel
-const getFuelQueue = async (fuelStationID, fuel) => {
+const locationVSchema = Joi.object({
+    Latitude: Joi.number().min(-90).max(90).required(),
+    Longitude: Joi.number().min(-180).max(180)
+});
 
-    // get the fuel queue using the fuel station registration number from the database
-    const fuelStation = await FuelStation.findOne({
-        _id: fuelStationID
-    }).select({
-        fuelPumps:1,
-        fuelQueue: 1
-    });
+const setFuelStationLocation = async (req, res) => {
+    if (!req.body.location || !req.body.managerId) return res.sendStatus(400);
 
-    // if there is no such fuel station registered in the system send false
-    if(!fuelStation)
-        return false;
-        
-    // fuel station is registered in the system, send the fuel queue, fuel, number of fuel pumps corresponding to the fuel
-    const fuelStationDetails = {
-        "fuel": fuel,
-        "fuelPumps": fuelStation.fuelPumps[fuel],
-        "fuelQueue": fuelStation.fuelQueue[fuel]
+    const managerId = req.body.managerId;
+    const location = {
+        Latitude: req.body.location.lat,
+        Longitude: req.body.location.lng
     }
 
-    return fuelStationDetails;
+    OIdValidationSchema.validate(managerId);
+    locationVSchema.validate(location);
+
+    const result = await FuelStation.updateOne({ownerUID: managerId},{location:location});
+    
+    if(result.modifiedCount>0) return res.json({success:true});
+    res.json({success:false});
 }
 
 module.exports = {
@@ -409,7 +407,6 @@ module.exports = {
     getFuelDetails,
     setFuelStatus,
     getAllFuelDeliveries,
-    getFuelStationLocation
-    getFuelQueue
-
+    getFuelStationLocation,
+    setFuelStationLocation,
 }
