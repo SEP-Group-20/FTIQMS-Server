@@ -53,10 +53,10 @@ const fuelStationSchema = mongoose.Schema({
     },
     location: {
         Latitude: {
-            type: String
+            type: Number
         },
         Longitude: {
-            type: String
+            type: Number
         }
     },
     mobile: {

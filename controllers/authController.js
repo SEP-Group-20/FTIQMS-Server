@@ -14,11 +14,11 @@ const NIC_REGEX = /^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
 /* this function validates the object that is passed to the parameter. */
 const validateCustomer = (user) => {
     const schema = Joi.object({
-        NIC: Joi.string().pattern(NIC_REGEX).required(),
-        password: Joi.string().pattern(PWD_REGEX).required(),
-        firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required(),
-        lastName: Joi.string().min(1).max(50),
-        mobile: Joi.string().pattern(MOBILE_REGEX).required()
+        NIC: Joi.string().pattern(NIC_REGEX).required().error(new Error("JoiValidationError")),
+        password: Joi.string().pattern(PWD_REGEX).required().error(new Error("JoiValidationError")),
+        firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required().error(new Error("JoiValidationError")),
+        lastName: Joi.string().min(1).max(50).error(new Error("JoiValidationError")),
+        mobile: Joi.string().pattern(MOBILE_REGEX).required().error(new Error("JoiValidationError"))
     })
     return schema.validate(user)
 }
