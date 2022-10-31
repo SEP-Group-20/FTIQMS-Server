@@ -38,7 +38,12 @@ const vehicleSchema = mongoose.Schema({
     notificationsSent: {
         type: Number,
         default: 0
+    },
+    registeredUnder: {
+        type: mongoose.Types.ObjectId,
+        ref: 'User'
     }
+
 });
 const Vehicle = mongoose.model('Vehicle', vehicleSchema);
 
