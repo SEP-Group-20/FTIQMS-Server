@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const Joi = require('../startup/validation')();
 const generator = require('generate-password');
 const bcrypt = require('bcrypt');
 const { FuelStation } = require('../models/FuelStation');
@@ -10,58 +11,58 @@ const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
 
 const SALT_ROUNDS = 9;
-const FUEL_THRESHOLDS = {"Petrol": 100, "Diesel": 100};
+const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
 
 // check if a given fuel station is registered before in the system, send a true or false as a response
-const checkFuelStationRegistered = async (req,res)=>{
+const checkFuelStationRegistered = async (req, res) => {
     // if registration number is not set send a error response
-    if(!req.body.registrationNumber) return res.sendStatus(400);
+    if (!req.body.registrationNumber) return res.sendStatus(400);
 
     // find a fuel station with the given registration number and email from the database
     const result = await FuelStation.findOne({
         registrationNumber: req.body.registrationNumber
     });
-    
+
     // if such a fuel station cannot be found, the fuel station is not registered in the system, send a success flag as the response
-    if(!result)
-        return res.json({success:true});
+    if (!result)
+        return res.json({ success: true });
     // if such a fuel station is found, the fuel station is registered previously in the system, send a failure flag as the response
-    res.json({success:false});
+    res.json({ success: false });
 }
 
 // check if a given fuel station exists in the real world (is it in the MFE database)
 // returns true if exists else returns false
-const checkFuelStationExistence = async (req,res) => {
+const checkFuelStationExistence = async (req, res) => {
     // if registration number is not set send a error response
-    if(!req.body.registrationNumber) return res.sendStatus(400);
+    if (!req.body.registrationNumber) return res.sendStatus(400);
 
     // call the MFE fuel stations API to find the existence of a fuel station, if exists returns the details of it
     const fuelStationDetails = await MFEGetFuelStationDetails(req.body.registrationNumber);
 
     // if such a fuel station cannot be found, the fuel station is not registered in the MFE, send a failure flag as the response
-    if(!fuelStationDetails)
-        res.json({success:false});
-    else 
+    if (!fuelStationDetails)
+        res.json({ success: false });
+    else
         // fuel station is registered in the MFE, send a success flag as the response
-        return res.json({success:true});    
+        return res.json({ success: true });
 
 }
 
 // get the details of the fuel station from the MFE database given the registration number
 // return the details of the fuel station or an error
-const getFuelStationDetailsMFE = async (req,res) => {
+const getFuelStationDetailsMFE = async (req, res) => {
     // if registration number is not set send a error response
-    if(!req.body.registrationNumber) return res.sendStatus(400);
+    if (!req.body.registrationNumber) return res.sendStatus(400);
 
     // call the MFE fuel stations API to find the existence of a fuel station, if exists returns the details of it
     const fuelStationDetails = await MFEGetFuelStationDetails(req.body.registrationNumber);
 
     // if such a fuel station cannot be found, the fuel station is not registered in the MFE, send a failure flag as the response
-    if(!fuelStationDetails)
-        return res.json({success: false});
+    if (!fuelStationDetails)
+        return res.json({ success: false });
 
     // send the details of the fuel station and a success flag as the reponse
-    res.json({success: true, fuelStation: fuelStationDetails});
+    res.json({ success: true, fuelStation: fuelStationDetails });
 }
 
 // register a fuel station in the system
@@ -195,7 +196,7 @@ const getFuelStationRegistrationNumber = async (req, res) => {
 const getFuelStationDetails = async (req, res) => {
 
     // if fuel station id is not set send a error response
-    if(!req.params.vid) 
+    if (!req.params.vid)
         return res.sendStatus(400);
 
     // get the logged in customer's vehicle list using the customer's NIC number from the database
@@ -211,17 +212,17 @@ const getFuelStationDetails = async (req, res) => {
 
     // if vehicle id is not in the vehicle list of the customer, fraudulent request, send failure message as the response
     if (!isValidVehicle)
-      return res.json({success: false});
+        return res.json({ success: false });
 
     // if vehicle is valid get the details of it from the database using the vehicle id
     const result = await Vehicle.findOne({
-        _id:req.params.vid
-    });  
+        _id: req.params.vid
+    });
 
     // if such a vehicle details cannot be retirved, send failure flag as the response
     if (!result)
-        return res.json({success: false});
-    else{
+        return res.json({ success: false });
+    else {
         // if vehicle details are retirved, send the details of it and a success flag as the response
         return res.json({
             success: true,
@@ -235,7 +236,7 @@ const getFuelStationDetails = async (req, res) => {
 const getFuelDetails = async (req, res) => {
 
     // if fuel station registration number is not set send a error response
-    if(!req.body.registrationNumber)
+    if (!req.body.registrationNumber)
         return res.sendStatus(400);
 
     // get the fuel types sold, remaining fuel amounts and fuel availability status using the fuel station registration number from the database
@@ -249,8 +250,8 @@ const getFuelDetails = async (req, res) => {
 
     // if such a fuel details cannot be retirved, send failure flag as the response
     if (!fuelDetails)
-        return res.json({success: false});
-    else{
+        return res.json({ success: false });
+    else {
         // if fuel details are retirved, organize the data and send the details and a success flag as the response
         let result = []
         fuelDetails.fuelSold.forEach(fuel => {
@@ -273,7 +274,7 @@ const getFuelDetails = async (req, res) => {
 const setFuelStatus = async (req, res) => {
 
     // if fuel station registration number or fuel or status is not set send a error response
-    if(!req.body.registrationNumber || !req.body.fuel)
+    if (!req.body.registrationNumber || !req.body.fuel)
         return res.sendStatus(400);
 
     // get the fuel types sold, remaining fuel amounts and fuel availability status using the fuel station registration number from the database
@@ -287,11 +288,11 @@ const setFuelStatus = async (req, res) => {
 
     // if such a fuel details cannot be retirved, send failure flag as the response
     if (!fuelDetails)
-        return res.json({success: false});
-    else{
+        return res.json({ success: false });
+    else {
         const fuel = req.body.fuel;
         // if fuel details are retirved, check if the request data are valid and set the status
-        if (fuelDetails.remainingFuel[fuel] <= FUEL_THRESHOLDS[fuel]){
+        if (fuelDetails.remainingFuel[fuel] <= FUEL_THRESHOLDS[fuel]) {
             fuelDetails.fuelAvailability[fuel] = req.body.status;
             await fuelDetails.save(); // save the updated fuel station details in the database
 
@@ -301,8 +302,8 @@ const setFuelStatus = async (req, res) => {
                 success: true
             });
         }
-        else 
-            return res.json({success: false});
+        else
+            return res.json({ success: false });
     }
 }
 
@@ -314,7 +315,7 @@ const MFEGetFuelStationDetails = async (registrationNumber) => {
     const fuelStation = await MFEFuelStations.find(fuelStation => fuelStation.registrationNumber === registrationNumber);
 
     // if there is no such fuel station registered in the MFE send false
-    if(!fuelStation)
+    if (!fuelStation)
         return false;
 
     // fuel station is registered in the MFE, send the fuel station details
@@ -336,13 +337,13 @@ const getAllFuelDeliveries = async (req, res) => {
     for (const fdid of fuelStation.fuelOrders) {
         // get fuel delivery details by calling the function in the fuel order controller
         const fuelDelivery = await getFuelDelivery(fdid.toString());
-        
+
         // check if fuel delivery details retrival is successful
         if (fuelDelivery.success)
             fuelDeliveryDetailsList.push(fuelDelivery.fuelDelivery); // if successful add the fuel delivery details to the list
         else
-            return res.json({success: false}); // if even one fuel delivery details retrival is a failure stop and send a error status
-      }
+            return res.json({ success: false }); // if even one fuel delivery details retrival is a failure stop and send a error status
+    }
 
     // if all fuel delivery detail retrival is successful send the details to the frontend as a response with a success flag
     return res.json({
@@ -350,6 +351,28 @@ const getAllFuelDeliveries = async (req, res) => {
         allFuelDeliveryDetails: fuelDeliveryDetailsList
     });
 }
+
+
+const OIdValidationSchema = Joi.object({
+    managerId: Joi.objectId().required()
+});
+
+/*this function responses with the location of the fuel station */
+const getFuelStationLocation = async (req, res) => {
+
+    OIdValidationSchema.validate({managerId: req.params.managerId});
+
+    //if no fuel station id send status code badRequest
+    if(! req.params.managerId) return res.sendStatus(400);
+
+    //query database for the location
+    const station = await FuelStation.findOne({ ownerUID : req.params.managerId})
+    .select({location: 1});
+
+    //send query results
+    return res.json({
+        location: station?.location
+    });
 
 // get the fuel queue of a fuel station corresponding to the fuel
 const getFuelQueue = async (fuelStationID, fuel) => {
@@ -386,5 +409,7 @@ module.exports = {
     getFuelDetails,
     setFuelStatus,
     getAllFuelDeliveries,
+    getFuelStationLocation
     getFuelQueue
+
 }
