@@ -359,19 +359,42 @@ const OIdValidationSchema = Joi.object({
 /*this function responses with the location of the fuel station */
 const getFuelStationLocation = async (req, res) => {
 
-    OIdValidationSchema.validate({managerId: req.params.managerId});
+    OIdValidationSchema.validate({ managerId: req.params.managerId });
 
     //if no fuel station id send status code badRequest
-    if(! req.params.managerId) return res.sendStatus(400);
+    if (!req.params.managerId) return res.sendStatus(400);
 
     //query database for the location
-    const station = await FuelStation.findOne({ ownerUID : req.params.managerId})
-    .select({location: 1});
+    const station = await FuelStation.findOne({ ownerUID: req.params.managerId })
+        .select({ location: 1 });
 
     //send query results
     return res.json({
         location: station?.location
     });
+}
+
+const locationVSchema = Joi.object({
+    Latitude: Joi.number().min(-90).max(90).required(),
+    Longitude: Joi.number().min(-180).max(180)
+});
+
+const setFuelStationLocation = async (req, res) => {
+    if (!req.body.location || !req.body.managerId) return res.sendStatus(400);
+
+    const managerId = req.body.managerId;
+    const location = {
+        Latitude: req.body.location.lat,
+        Longitude: req.body.location.lng
+    }
+
+    OIdValidationSchema.validate(managerId);
+    locationVSchema.validate(location);
+
+    const result = await FuelStation.updateOne({ownerUID: managerId},{location:location});
+    
+    if(result.modifiedCount>0) return res.json({success:true});
+    res.json({success:false});
 }
 
 module.exports = {
@@ -384,5 +407,6 @@ module.exports = {
     getFuelDetails,
     setFuelStatus,
     getAllFuelDeliveries,
-    getFuelStationLocation
+    getFuelStationLocation,
+    setFuelStationLocation
 }
