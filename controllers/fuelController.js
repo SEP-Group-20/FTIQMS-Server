@@ -35,7 +35,7 @@ const updateFuelAllocations = async () => {
     ]);
 
     // update fuel allocations of every customer
-    const result = updateCustomerFuelAllocation(newFuelAllocation);
+    const result = await updateCustomerFuelAllocation(newFuelAllocation);
 
     return result;
 }
