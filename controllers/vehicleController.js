@@ -5,6 +5,7 @@ const { startSession, Types } = require('mongoose')
 const DMTVehicles = require('../models/DMTVehicles.json');
 const { getFuelQueue } = require('./fuelStationController');
 const { FuelStation } = require('../models/FuelStation');
+const { Fuel } = require('../models/Fuel');
 
 // fuel allocation category based on vehicle type
 const fuelAllocationCategorization = {
@@ -17,15 +18,6 @@ const fuelAllocationCategorization = {
         "Small Diesel Vehicle",
         { "Large Diesel Vehicle": [ "Large Lorry", "Container Truck", "Bus"] }
     ]
-};
-
-// fuel allocations based on fuel allocation category of a vehicle
-const fuelAllocations = {
-    "MotorCycle": "5",
-    "ThreeWheeler": "10",
-    "Other Petrol Vehicle": "20",
-    "Small Diesel Vehicle": "20",
-    "Large Diesel Vehicle": "50"
 };
 
 // check if a given vehicle is registered before in the system, send a true or false as a response
@@ -79,8 +71,9 @@ const getVehicleDetailsDMT = async (req,res) => {
 
     // get the fuel allocation category of the vehicle given the vehicle type and its fuel
     const fuelAllocationCategory = getFuelAllocationCategory(vehicleDetails.vehicleType, vehicleDetails.fuelType);
+
     // get the fuel allocation of the vehicle given the fuel allocation category
-    const fuelAllocation = getFuelAllocation(fuelAllocationCategory);
+    const fuelAllocation = await getFuelAllocation(fuelAllocationCategory);
 
     // add those details to the vehicle details
     vehicleDetails["fuelAllocationCategory"] = fuelAllocationCategory;
@@ -125,11 +118,12 @@ const registerVehicle = async (req, res) => {
         // get the fuel type of the vehicle
         const fuelType = vehicle.fuelType; 
         // get the fuel allocation of that vehicle based on its vehicle type
-        const fuelAllocation = parseInt(getFuelAllocation(vehicle.vehicleType)); 
+        let fuelAllocation = await getFuelAllocation(vehicle.vehicleType);
+        fuelAllocation = parseInt(fuelAllocation);
         customer.fuelAllocation[fuelType] += fuelAllocation; // increase fuel allocation
         customer.remainingFuel[fuelType] += fuelAllocation; // increase remainng fuel amount by the new fuel allocation
 
-        await customer.save(); // save the updated cusotmer in the database
+        await customer.save(); // save the updated customer in the database
         await session.commitTransaction(); // database update successful, commit the transaction
         session.endSession(); // end the session
 
@@ -215,11 +209,11 @@ const getFuelAllocationCategory = (vehicleType, fuelType) => {
     // if fuel type is petrol
     if (fuelType === "Petrol") {
         // find the relevant fuel allocation category for the vehicle form the petrol section
-        fuelAllocationCategorization.Petrol.forEach(catergory => {
+        for (const category of fuelAllocationCategorization.Petrol) {
             // if category name and vehicle type matches, the fuel allocation category is the category
-            if (catergory === vehicleType)
-                return catergory;
-        });
+            if (category === vehicleType)
+                return category;     
+        }
         // if no category name and vehicle type matches, the fuel allocation category is the other petrol vehicle category
         return "Other Petrol Vehicle";
     // if fuel type is diesel
@@ -238,8 +232,16 @@ const getFuelAllocationCategory = (vehicleType, fuelType) => {
 // get the fuel allocation of the vehicle from the server data given the fuel allocation category of the vehicle
 // return the fuel allocation of the vehicle
 // called by the vehicle controller so no request or response to or from the frontend
-const getFuelAllocation = (fuelAllocationCategory) => {
-    const fuelAllocation = fuelAllocations[fuelAllocationCategory]; // find the relevant fuel allocation
+const getFuelAllocation = async (fuelAllocationCategory) => {
+    const fuelAllocations = await Fuel.findOne({}).select({
+        "MotorCycle": 1,
+        "ThreeWheeler": 1,
+        "Other Petrol Vehicle": 1,
+        "Small Diesel Vehicle": 1,
+        "Large Diesel Vehicle": 1
+    });
+    const fuelAllocation = fuelAllocations[fuelAllocationCategory].toString(); // find the relevant fuel allocation
+
     return fuelAllocation;
 }
 

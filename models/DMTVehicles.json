@@ -43,7 +43,7 @@
         "registrationNumber": "KS-1932",
         "chassisNumber": "12345678901234561",
         "owner": "Tom Cat",
-        "mobileNumber": "0777846523",
+        "mobileNumber": "0777735485",
         "make": "Kia",
         "model": "Sorento",
         "vehicleType": "SUV",
@@ -53,7 +53,7 @@
         "registrationNumber": "AAF-4565",
         "chassisNumber": "12345678901234562",
         "owner": "Nimal Kumara",
-        "mobileNumber": "0710557172",
+        "mobileNumber": "0711236008",
         "make": "Piaggio",
         "model": "ThreeWheeler",
         "vehicleType": "ThreeWheeler",
@@ -63,7 +63,7 @@
         "registrationNumber": "CCA 4562",
         "chassisNumber": "12345678901234563",
         "owner": "Saman Amal",
-        "mobileNumber": "0710557172",
+        "mobileNumber": "0777735485",
         "make": "Bajaj",
         "model": "CT100",
         "vehicleType": "MotorCycle",
@@ -88,5 +88,15 @@
         "model": "100-XF",
         "vehicleType": "Container Truck",
         "fuelType": "Diesel"
+    },
+    {
+        "registrationNumber": "WZ-1219",
+        "chassisNumber": "12345678801234564",
+        "owner": "Kasun Pavithra",
+        "mobileNumber": "0710557172",
+        "make": "Yamaha",
+        "model": "1000CC",
+        "vehicleType": "MotorCycle",
+        "fuelType": "Petrol"
     }
 ]
