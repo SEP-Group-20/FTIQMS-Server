@@ -185,6 +185,9 @@ module.exports = {
     getUserByEmail,
     registerAdmin, 
     getAllAdmins,
-    getAllFSMs
+    getAllFSMs,
+    getUsernameByNIC,
+    getUsernameByEmail,
+    generatePWD
 }
 

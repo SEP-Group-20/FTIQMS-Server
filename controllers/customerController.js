@@ -10,12 +10,17 @@ const updateFuelAllocation = (fuelType, fuelAllocation) => {
 
 // get details of all the registered vehicles of a cusomtomer 
 const getAllRegisteredVehicles = async (req, res) => {
+
+    if (!req.body.userNIC) return res.sendStatus(400);
+
     // get the logged in customer's vehicle list using the customer's NIC number from the database
     const customer = await User.findOne({
         NIC: req.body.userNIC
     }).select({
         vehicles: 1
     });
+
+    if (!customer) return res.sendStatus(400);
 
     const vehicleDetailsList = [];
 
@@ -40,12 +45,16 @@ const getAllRegisteredVehicles = async (req, res) => {
 
 // get remaining petrol and diesel amounts of the customer
 const getRemainingFuel = async (req, res) => {
+    if (!req.body.userNIC) return res.sendStatus(400);
+
     // get the logged in customer's remaining fuel details using the customer's NIC number from the database
     const customer = await User.findOne({
         NIC: req.body.userNIC
     }).select({
         remainingFuel: 1
     });
+
+    if (!customer) return res.sendStatus(400);
 
     // check if remaining fuel details retrival is successful
     if(!customer)
