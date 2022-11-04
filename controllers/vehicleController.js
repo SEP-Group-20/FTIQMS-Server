@@ -394,5 +394,9 @@ module.exports = {
     getVehicle,
     registerVehicle,
     getVehicleDetails,
-    assignFuelQueue
+    assignFuelQueue,
+    getFuelAllocationCategory,
+    getFuelAllocation,
+    DMTGetVehicleDetails,
+    selectFuelStation
 }

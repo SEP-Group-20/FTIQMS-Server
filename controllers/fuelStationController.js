@@ -409,4 +409,5 @@ module.exports = {
     getAllFuelDeliveries,
     getFuelStationLocation,
     setFuelStationLocation,
+    MFEGetFuelStationDetails
 }

@@ -13,9 +13,12 @@ require('./startup/db')();
 
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    logger.info("Listning to the PORT: " + PORT);
-});
+
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        logger.info("Listning to the PORT: " + PORT);
+    });
+}
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 

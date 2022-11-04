@@ -188,5 +188,6 @@ module.exports = {
     checkFuelOrderExistence,
     getFuelOrderDetailsMFE,
     registerFuelDelivery,
-    getFuelDelivery
+    getFuelDelivery,
+    MFEGetFuelOrderDetails
 }
