@@ -9,6 +9,7 @@ const ROLES_LIST = require('../utils/rolesList');
 const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
+const { SET_FUEL_STATUS, SET_LOCATION } = require('../utils/ManagerStatuses');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
@@ -391,10 +392,38 @@ const setFuelStationLocation = async (req, res) => {
     OIdValidationSchema.validate(managerId);
     locationVSchema.validate(location);
 
-    const result = await FuelStation.updateOne({ownerUID: managerId},{location:location});
-    
-    if(result.modifiedCount>0) return res.json({success:true});
-    res.json({success:false});
+    let session;
+    let result;
+    // FIXME - need to add transactions here
+    // try {
+    // session = await mongoose.startSession();
+
+    // session.startTransaction();
+
+    // result = await FuelStation.updateOne({ ownerUID: managerId }, { location: location }).session(session);
+    // console.log("Started did 1!");
+    // const user = await User.findOne({ _id: managerId }).select({ status: 1 }).session(session);
+    // if (user.status === COMPLETELY_NEW) user.status = SET_LOCATION;
+    // const res = await user.save().session(session);
+    // await session.commitTransaction();
+    // await session.endSession();
+    // return res.json({ success: true });
+
+    //implementation without transactions
+    result = await FuelStation.updateOne({ ownerUID: managerId }, { location: location });
+    const user = await User.findOne({ _id: managerId }).select({ status: 1 });
+    if (user.status === SET_FUEL_STATUS) {
+        user.status = SET_LOCATION;
+        await user.save();
+    };
+    res.json({ success: true });
+
+    // }
+    // catch (err) {
+    //     console.log(err)
+    //     // session.abortTransaction();
+    // }
+    // res.json({ success: false });
 }
 
 module.exports = {

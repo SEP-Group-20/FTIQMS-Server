@@ -72,7 +72,7 @@ const login = async (req, res) => {
     //find the user from email address
     const user = await User
         .findOne({ email: email })
-        .select({ email: 1, password: 1, role: 1 });
+        .select({ email: 1, password: 1, role: 1, status: 1 });
     // if user not found reject request with 401 status code
     if (!user) return res.sendStatus(401);
 
@@ -88,7 +88,8 @@ const login = async (req, res) => {
             "userInfo": {
                 "id": user._id,
                 "role": user.role,   //5000 for users
-                "email": user.email
+                "email": user.email,
+                "status": user.status
             }
         }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
@@ -162,7 +163,7 @@ const refresh = async (req, res) => {
         .select({ _id: 1, role: 1, NIC: 1 })
         : await User
             .findOne({ refreshToken: refreshToken, role: req.params.role })
-            .select({ _id: 1, role: 1, email: 1 });
+            .select({ _id: 1, role: 1, email: 1, status: 1 });
     if (!user) return res.status(403).json({ "message": "Invalid token" });
 
     // here you need to check the wethear there is a refreshtoken in a database
@@ -176,7 +177,8 @@ const refresh = async (req, res) => {
                 "id": user._id,
                 "role": parseInt(req.params.role),       //for now it is  for registeredUsers
                 "NIC": user.NIC,
-                "email": user.email
+                "email": user.email,
+                "status": user.status
             }
         }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: '300s'
