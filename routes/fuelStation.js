@@ -1,6 +1,7 @@
 require('express-async-errors');
 const router = require('express').Router();
 const fuelStationController = require('../controllers/fuelStationController');
+const verifyJWT = require('../midleware/verifyJWT');
 
 router.post("/checkFuelStationRegistered", fuelStationController.checkFuelStationRegistered);
 router.post("/checkFuelStationExistence", fuelStationController.checkFuelStationExistence);
@@ -12,6 +13,7 @@ router.post("/setFuelStatus", fuelStationController.setFuelStatus);
 router.post("/register", fuelStationController.registerFuelStation);
 router.post("/getAllFuelDeliveryDetails", fuelStationController.getAllFuelDeliveries);
 router.get("/getFuelStationLocation/:managerId",fuelStationController.getFuelStationLocation);
-router.post("/setFuelStationLocation",fuelStationController.setFuelStationLocation)
+router.post("/setFuelStationLocation",fuelStationController.setFuelStationLocation);
+router.post("/setInitFuelStatus",verifyJWT,fuelStationController.setInitFuelStat);
 
 module.exports = router;

@@ -9,7 +9,7 @@ const ROLES_LIST = require('../utils/rolesList');
 const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
-const { SET_FUEL_STATUS, SET_LOCATION } = require('../utils/ManagerStatuses');
+const { SET_FUEL_STATUS, SET_LOCATION, PWD_UPDATED } = require('../utils/ManagerStatuses');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
@@ -360,12 +360,12 @@ const getFuelQueue = async (fuelStationID, fuel) => {
     const fuelStation = await FuelStation.findOne({
         _id: fuelStationID
     }).select({
-        fuelPumps:1,
+        fuelPumps: 1,
         fuelQueue: 1
     });
 
     // if there is no such fuel station registered in the system send false
-    if(!fuelStation)
+    if (!fuelStation)
         return false;
 
     // fuel station is registered in the system, send the fuel queue, fuel, number of fuel pumps corresponding to the fuel
@@ -449,6 +449,33 @@ const setFuelStationLocation = async (req, res) => {
     //     // session.abortTransaction();
     // }
     // res.json({ success: false });
+};
+
+const fuelObjectSchema = Joi.object({
+    petrol: Joi.number().min(0).required(),
+    diesel: Joi.number().min(0).required()
+});
+
+setInitFuelStat = async (req, res) => {
+    if (!req.body?.fuel) return res.sendStatus(400); //bad request if no data
+
+    fuelObjectSchema.validate(req.body.fuel);
+
+    //FIXME - need a transaction here
+    const station = await FuelStation.findOne({ ownerUID: req.userID }, { remainingFuel: 1, fuelAvailability: 1 })
+    station.remainingFuel = req.body.fuel;
+    let petrol_av = false;
+    let diesel_av = false;
+    if (req.body.fuel.Petrol > 0) petrol_av = true;
+    if (req.body.fuel.Diesel > 0) diesel_av = true;
+    station.fuelAvailability = { Petrol: petrol_av, Diesel: diesel_av };
+    const result = await station.save();
+    const user = await User.findById(req.userID, { status: 1 });
+    if (user.status === PWD_UPDATED) {
+        user.status = SET_FUEL_STATUS;
+        await user.save();
+    }
+    if (result) res.json({ success: true });
 }
 
 module.exports = {
@@ -464,5 +491,6 @@ module.exports = {
     getFuelQueue,
     getFuelStationLocation,
     setFuelStationLocation,
-    MFEGetFuelStationDetails
+    MFEGetFuelStationDetails,
+    setInitFuelStat
 }
