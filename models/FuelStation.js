@@ -53,10 +53,10 @@ const fuelStationSchema = mongoose.Schema({
     },
     location: {
         Latitude: {
-            type: String
+            type: Number
         },
         Longitude: {
-            type: String
+            type: Number
         }
     },
     mobile: {
@@ -89,6 +89,16 @@ const fuelStationSchema = mongoose.Schema({
         Diesel: {
             type: Number,
             default: 0
+        }
+    },
+    fuelAvailability: {
+        Petrol: {
+            type: Boolean,
+            default: false
+        },
+        Diesel: {
+            type: Boolean,
+            default: false
         }
     },
     fuelQueue: {

@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
 
 const fuelOrderSchema = mongoose.Schema({
-    orderNumber: {
+    fuelStation: {
+        type: String,
+        required: true
+    },
+    orderID: {
         type: String,
         required: true,
         unique:true
     },
-    deliveryNumber: {
+    deliveryID: {
         type: String,
         required: true,
         unique:true
@@ -29,11 +33,6 @@ const fuelOrderSchema = mongoose.Schema({
     },
     deliveryDate: {
         type: Date,
-        required: true
-    },
-    fuelStationID: {
-        type: mongoose.Types.ObjectId,
-        ref: 'FuelStation',
         required: true
     }
 });

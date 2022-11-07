@@ -9,16 +9,16 @@ const admin = require('../utils/firebaseAdminService');
 const SALT_ROUNDS = 9;
 
 const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
-const NIC_REGEX =/^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
+const NIC_REGEX = /^([0-9]{9}[x|X|v|V]|[0-9]{12})$/;
 
 /* this function validates the object that is passed to the parameter. */
 const validateCustomer = (user) => {
     const schema = Joi.object({
-        NIC: Joi.string().pattern(NIC_REGEX).required(),
-        password: Joi.string().pattern(PWD_REGEX).required(),
-        firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required(),
-        lastName: Joi.string().min(1).max(50),
-        mobile: Joi.string().pattern(MOBILE_REGEX).required()
+        NIC: Joi.string().pattern(NIC_REGEX).required().error(new Error("JoiValidationError")),
+        password: Joi.string().pattern(PWD_REGEX).required().error(new Error("JoiValidationError")),
+        firstName: Joi.string().min(1).max(50).pattern(NAME_REGEX).required().error(new Error("JoiValidationError")),
+        lastName: Joi.string().min(1).max(50).error(new Error("JoiValidationError")),
+        mobile: Joi.string().pattern(MOBILE_REGEX).required().error(new Error("JoiValidationError"))
     })
     return schema.validate(user)
 }
@@ -48,8 +48,8 @@ const registerCustomer = async (req, res) => {
         user.password = hash;
         user.role = ROLES_LIST.CUSTOMER;
         //specify initial fuel allocation
-        user["fuelAllocation"] = {"Petrol": 0, "Diesel": 0};
-        user["remainingFuel"] = {"Petrol": 0, "Diesel": 0};
+        user["fuelAllocation"] = { "Petrol": 0, "Diesel": 0 };
+        user["remainingFuel"] = { "Petrol": 0, "Diesel": 0 };
 
         //create user object according to the details
         user = new User(user);
@@ -72,7 +72,7 @@ const login = async (req, res) => {
     //find the user from email address
     const user = await User
         .findOne({ email: email })
-        .select({ email: 1, password: 1, role: 1 });
+        .select({ email: 1, password: 1, role: 1, status: 1 });
     // if user not found reject request with 401 status code
     if (!user) return res.sendStatus(401);
 
@@ -88,7 +88,8 @@ const login = async (req, res) => {
             "userInfo": {
                 "id": user._id,
                 "role": user.role,   //5000 for users
-                "email": user.email
+                "email": user.email,
+                "status": user.status
             }
         }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '300s' });
 
@@ -137,7 +138,7 @@ const customerLogin = async (req, res) => {
         //save refresh token in the datadase
         user.refreshToken = refreshToken;
         user.save();
-        
+
         //send refresh token to user as a http-only cokie
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
@@ -157,9 +158,12 @@ const refresh = async (req, res) => {
     const refreshToken = cookies.jwt;
 
     //
-    const user = await User
+    var user = (parseInt(req.params.role) === ROLES_LIST.CUSTOMER) ? await User
         .findOne({ refreshToken: refreshToken, role: req.params.role })
-        .select({ _id: 1, role: 1 });
+        .select({ _id: 1, role: 1, NIC: 1 })
+        : await User
+            .findOne({ refreshToken: refreshToken, role: req.params.role })
+            .select({ _id: 1, role: 1, email: 1, status: 1 });
     if (!user) return res.status(403).json({ "message": "Invalid token" });
 
     // here you need to check the wethear there is a refreshtoken in a database
@@ -171,7 +175,10 @@ const refresh = async (req, res) => {
         const accessToken = jwt.sign({
             "userInfo": {
                 "id": user._id,
-                "role": req.params.role       //for now it is  for registeredUsers
+                "role": parseInt(req.params.role),       //for now it is  for registeredUsers
+                "NIC": user.NIC,
+                "email": user.email,
+                "status": user.status
             }
         }, process.env.ACCESS_TOKEN_SECRET, {
             expiresIn: '300s'
@@ -288,4 +295,14 @@ const validateFirebaseAndLogin = async (req, res) => {
 
 
 
-module.exports = { registerCustomer, login, refresh, logout, checkNIC, customerLogin, getMobileByNIC, validateFirebaseAndLogin, validateCustomer };
+module.exports = {
+    registerCustomer,
+    login,
+    refresh,
+    logout,
+    checkNIC,
+    customerLogin,
+    getMobileByNIC,
+    validateFirebaseAndLogin,
+    validateCustomer
+};
