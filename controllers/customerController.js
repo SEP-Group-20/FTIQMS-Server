@@ -126,20 +126,9 @@ const updateCustomerFuelAllocation = async (newFuelAllocation) => {
 }
 
 
-const getCustomerDetails = async (req, res) => {
-    try {
-        const details = await User.findById(req.userID)
-        return res.status(200).send(details)
-    } catch (error) {
-        return res.status(500).send(error)
-    }
-
-}
-
 module.exports = {
     updateFuelAllocation,
     getAllRegisteredVehicles,
     getRemainingFuel,
     updateCustomerFuelAllocation,
-    getCustomerDetails
 }

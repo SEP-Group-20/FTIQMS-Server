@@ -195,6 +195,16 @@ const updatePWD = async (req, res) => {
     if (result) res.json({ success: true });
 }
 
+const getUserDetails = async (req, res) => { //get user details
+    try {
+        const details = await User.findById(req.userID)
+        return res.status(200).send(details)
+    } catch (error) {
+        return res.status(500).send(error)
+    }
+
+}
+
 module.exports = {
     getUserByNIC,
     getUsername,
@@ -205,6 +215,7 @@ module.exports = {
     getUsernameByNIC,
     getUsernameByEmail,
     generatePWD,
-    updatePWD
+    updatePWD,
+    getUserDetails
 }
 

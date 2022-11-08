@@ -5,6 +5,6 @@ const verifyJWT = require('../midleware/verifyJWT');
 
 router.post("/getAllRegisteredVehicleDetails", customerController.getAllRegisteredVehicles);
 router.post('/getFuelStatus', customerController.getRemainingFuel);
-router.post("/getCustomerDetails",verifyJWT, customerController.getCustomerDetails)
+
 
 module.exports = router;
