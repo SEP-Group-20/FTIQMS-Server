@@ -131,5 +131,4 @@ module.exports = {
     getAllRegisteredVehicles,
     getRemainingFuel,
     updateCustomerFuelAllocation,
-    getCustomerDetails
 }
