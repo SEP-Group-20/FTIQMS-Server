@@ -6,5 +6,6 @@ router.post("/checkFuelDeliveryRegistered", fuelOrderController.checkFuelDeliver
 router.post("/checkFuelOrderExistence", fuelOrderController.checkFuelOrderExistence);
 router.post("/getFuelOrderDetailsMFE", fuelOrderController.getFuelOrderDetailsMFE);
 router.post("/register", fuelOrderController.registerFuelDelivery);
+router.post("/getFuelOrders",fuelOrderController.getFuelOrders);
 
 module.exports = router;
