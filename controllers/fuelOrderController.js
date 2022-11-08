@@ -183,23 +183,11 @@ const getFuelDelivery = async (fdid) => {
     }
 }
 
-const getFuelOrders = async () => {
-    try {
-        const orderDetails = await FuelOrder.find()
-        { $sort : { orderDate : 1 } }
-        return res.status(201).send(details)
-    } catch (error) {
-        return res.status(400).send(error)
-        
-    }
-}
-
 module.exports = {
     checkFuelDeliveryRegistered,
     checkFuelOrderExistence,
     getFuelOrderDetailsMFE,
     registerFuelDelivery,
     getFuelDelivery,
-    MFEGetFuelOrderDetails,
-    getFuelOrders
+    MFEGetFuelOrderDetails
 }

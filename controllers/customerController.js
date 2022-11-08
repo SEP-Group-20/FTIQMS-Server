@@ -2,9 +2,6 @@ const _ = require('lodash');
 const { User } = require('../models/User');
 const { startSession } = require('mongoose')
 const { getVehicle } = require('./vehicleController');
-const { constant } = require('lodash');
-const { id } = require('@hapi/joi/lib/base');
-
 
 // incomplete and not used any where
 const updateFuelAllocation = (fuelType, fuelAllocation) => {
@@ -139,4 +136,10 @@ const getCustomerDetails = async (req, res) => {
 
 }
 
-module.exports = {updateFuelAllocation, getAllRegisteredVehicles, getRemainingFuel, updateCustomerFuelAllocation, getCustomerDetails}
+module.exports = {
+    updateFuelAllocation,
+    getAllRegisteredVehicles,
+    getRemainingFuel,
+    updateCustomerFuelAllocation,
+    getCustomerDetails
+}
