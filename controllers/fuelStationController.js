@@ -10,6 +10,7 @@ const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
 const { SET_FUEL_STATUS, SET_LOCATION, PWD_UPDATED } = require('../utils/ManagerStatuses');
+const { ACTIVE_FS } = require('../utils/fuelStationStatuses');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
@@ -469,6 +470,7 @@ setInitFuelStat = async (req, res) => {
     if (req.body.fuel.Petrol > 0) petrol_av = true;
     if (req.body.fuel.Diesel > 0) diesel_av = true;
     station.fuelAvailability = { Petrol: petrol_av, Diesel: diesel_av };
+    station.status = ACTIVE_FS;
     const result = await station.save();
     const user = await User.findById(req.userID, { status: 1 });
     if (user.status === PWD_UPDATED) {
