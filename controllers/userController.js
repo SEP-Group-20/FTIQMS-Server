@@ -179,6 +179,10 @@ const getAllFSMs = async (req, res) => {
     });
 }
 
+const getFuelOrderDetails = async(req, res) => {
+    
+}
+
 module.exports = { 
     getUserByNIC,
     getUsername,

@@ -8,7 +8,7 @@ module.exports = () => {
     });
     // assign event handler for unhandled promise rejections
     process.on('unhandledRejection', (err) => {
-        console.log("There is an unhandled rejection!");
+        console.log(err);
         throw err;
     })
 }
