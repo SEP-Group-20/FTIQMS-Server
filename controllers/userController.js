@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const { ADMIN, MANAGER } = require("../utils/rolesList");
 const pwdGenerator = require('generate-password');
 const sendMail = require("../utils/emailService");
+const { COMPLETELY_NEW, PWD_UPDATED } = require('../utils/ManagerStatuses');
+const { result } = require('lodash');
 const SALT_ROUNDS = 9;
 
 // get details of a user given the NIC
@@ -81,7 +83,7 @@ const getUsername = async (req, res) => {
         return res.sendStatus(400);
 
     let username = {}
-    
+
     if (req.body.userNIC)
         username = await getUsernameByNIC(req.body.userNIC);
 
@@ -101,7 +103,7 @@ const getUsername = async (req, res) => {
     }
 }
 
-/*This function is to generate a password accourdig to the password policies */
+/*This function is to generate a password according to the password policies */
 const generatePWD = () => {
     return pwdGenerator.generate({
         length: 10,
@@ -179,19 +181,30 @@ const getAllFSMs = async (req, res) => {
     });
 }
 
-const getFuelOrderDetails = async(req, res) => {
-    
+const updatePWD = async (req, res) => {
+    const user = await User.findById(req.userID, { password: 1, status: 1 });
+
+    if (!req.body.newPwd || !user) return res.sendStatus(400); //bad request if no pwd
+
+    // here hash the password before store in the database
+    const hash = await bcrypt.hash(req.body.newPwd, SALT_ROUNDS);
+
+    user.password = hash;
+    if (user.status === COMPLETELY_NEW) user.status = PWD_UPDATED;
+    const result = await user.save();
+    if (result) res.json({ success: true });
 }
 
-module.exports = { 
+module.exports = {
     getUserByNIC,
     getUsername,
     getUserByEmail,
-    registerAdmin, 
+    registerAdmin,
     getAllAdmins,
     getAllFSMs,
     getUsernameByNIC,
     getUsernameByEmail,
-    generatePWD
+    generatePWD,
+    updatePWD
 }
 
