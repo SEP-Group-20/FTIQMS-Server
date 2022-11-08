@@ -12,6 +12,8 @@ router.post('/isEmailRegistered', userController.getUserByEmail);
 router.post("/getAllAdminDetails", userController.getAllAdmins);
 router.post("/getAllFSMDetails", userController.getAllFSMs);
 router.post("/updatePwd",verifyJWT, userController.updatePWD);
+router.post("/getUserDetails",verifyJWT, userController.getUserDetails)
+
 
 
 module.exports = router;
