@@ -11,6 +11,8 @@ const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
 const { SET_FUEL_STATUS, SET_LOCATION, PWD_UPDATED } = require('../utils/ManagerStatuses');
 const { ACTIVE_FS } = require('../utils/fuelStationStatuses');
+const { getCustomerDetailsByNIC } = require('./userController');
+const { Vehicle } = require('../models/Vehicle');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
@@ -457,12 +459,12 @@ const fuelObjectSchema = Joi.object({
     diesel: Joi.number().min(0).required()
 });
 
-setInitFuelStat = async (req, res) => {
+const setInitFuelStat = async (req, res) => {
     if (!req.body?.fuel) return res.sendStatus(400); //bad request if no data
 
     fuelObjectSchema.validate(req.body.fuel);
 
-    //FIXME - need a transaction here
+    //FIXME: - need a transaction here
     const station = await FuelStation.findOne({ ownerUID: req.userID }, { remainingFuel: 1, fuelAvailability: 1 })
     station.remainingFuel = req.body.fuel;
     let petrol_av = false;
@@ -480,6 +482,174 @@ setInitFuelStat = async (req, res) => {
     if (result) res.json({ success: true });
 }
 
+const getCustomerDetails = async (req, res) => {
+    if (!req.body.registrationNumber || !req.body.userNIC)
+        return res.json({ success: false, message: "User NIC or Fuel station registration number not set" });
+    
+    const NIC = req.body.userNIC;
+    const registrationNumber = req.body.registrationNumber;
+
+    let customer = await getCustomerDetailsByNIC(NIC);
+    let fuelStation = await getFuelStationDetailsByRegNumber(registrationNumber);
+
+    if (!customer.success)
+        return res.json({ success: false, message: "Customer not registered in system" });
+
+    customer = customer.customer;
+    fuelStation = fuelStation.fuelStation;
+    
+    if (!customer.fuelStations.includes(fuelStation._id))
+        return res.json({ success: false, message: "Customer not registered in this fuel station" });
+
+    const vehicles = await getQueuedVehicles(customer._id);
+
+    if (!vehicles.success)
+        return res.json({ success: false, message: "Vehicles not queued or not notified" });
+    
+    const vehicleList = vehicles.vehicleList;
+
+    let fuelSaleEligibleVehicles = {}
+
+    for (let index = 0; index < vehicleList.length; index++) {
+        const vehicle = vehicleList[index];
+        if (fuelStation.fuelQueue[vehicle.fuelType].includes(vehicle._id))
+            fuelSaleEligibleVehicles[vehicle.fuelType] = vehicle._id;
+    }
+    if (Object.keys(fuelSaleEligibleVehicles).length === 0)
+        return res.json({ success: false, message: "Vehicles not queued in this fuel station" });
+
+    let customerDetails = {};
+    customerDetails["customer"] = customer;
+    customerDetails["fuelStation"] = fuelStation;
+    customerDetails["fuelSaleEligibleVehicles"] = fuelSaleEligibleVehicles;
+
+    return res.json({ success: true, customerDetails: customerDetails });
+}
+
+// get details of a fuel station given the registration number
+const getFuelStationDetailsByRegNumber = async (registrationNumber) => {
+    // get the logged in fuel station details using the fuel station registration number from the database
+    const result = await FuelStation.findOne({
+        registrationNumber: registrationNumber
+    });
+
+    // if fuel station detail retrival is a failure send a error flag as the response
+    if (!result)
+        return ({success: false});
+    else {
+        // get the _id, fuel queues and remaining fuel of the fuel station
+        // and send only those in the response with a success flag
+        return ({
+            success: true,
+            fuelStation: _.pick(result, ["_id", "fuelQueue", "remainingFuel"])
+        });
+    }
+}
+
+// get the queued vehicles of a customer given the id
+const getQueuedVehicles = async (uid) => {
+    // get the queued vehicles and notified vehicles of a customer
+    const result = await Vehicle.find({
+        registeredUnder: uid,
+        isQueued: true,
+        notificationsSent: { $gt: 0 }
+    }).select({
+        _id: 1,
+        registrationNumber: 1,
+        fuelType: 1,
+        vehicleType: 1
+    });
+
+    // if vechicle retrival is a failure send a error flag as the response
+    if (!result.length)
+        return ({success: false});
+    else {
+        // get the _id, fuel queues and remaining fuel of the fuel station
+        // and send only those in the response with a success flag
+        return ({
+            success: true,
+            vehicleList: result
+        });
+    }
+}
+
+const recordFuelSale = async (req, res) => {
+    // start a seesion to enable transactions in the database
+    const session = await startSession();
+    // FIXME: sessions not working
+    try {
+        // start transction
+        // because we need to ensure ACID properties when entering data to multiple models
+        session.startTransaction();
+
+        const resCustomer = req.body.customerDetails.customer;
+        const resVehicleList = req.body.customerDetails.fuelSaleEligibleVehicles;
+        const resFuelStation = req.body.customerDetails.fuelStation;
+        let fuel = req.body.fuel.toLowerCase();
+        fuel = fuel.charAt(0).toUpperCase() + fuel.slice(1)
+        const fuelSale = parseFloat(req.body.fuelSale);
+        const vid = resVehicleList[fuel];
+
+        // get the details of the vehicle from the database using the vehicle id
+        const vehicle = await Vehicle.findOne({
+            _id: vid
+        }).select({
+            isQueued: 1,
+            notificationsSent: 1
+        });
+
+        // get the details of the fuel station from the database using the vehicle id
+        const fuelStation = await FuelStation.findOne({
+            _id: resFuelStation._id
+        }).select({
+            name: 1,
+            address: 1,
+            remainingFuel: 1,
+            fuelQueue: 1
+        });
+
+        // get the details of the customer from the database using the vehicle id
+        const customer = await User.findOne({
+            _id: resCustomer._id
+        }).select({
+            mobile: 1,
+            remainingFuel: 1
+        });
+        
+        // decrease the remaining fuel amount of the fuel station by the sold fuel amount of the sold fuel
+        fuelStation.remainingFuel[fuel] -= fuelSale;
+
+        // remove the vehicle that was fueled from the relevany fuel queue of the fuel station
+        const index = fuelStation.fuelQueue[fuel].indexOf(vehicle._id);
+
+        if (index > -1)
+            fuelStation.fuelQueue[fuel].splice(index, 1);
+
+        // decrease the remaining fuel amount of the customer by the sold fuel amount of the sold fuel
+        customer.remainingFuel[fuel] -= fuelSale;
+
+        // set the vehicle as not queued and not notified
+        vehicle.isQueued = false;
+        vehicle.notificationsSent = 0;
+
+        await fuelStation.save(); // save the updated fuel station details in the database
+        await customer.save(); // save the updated customer details in the database
+        await vehicle.save(); // save the updated vehicle details in the database
+
+        // TODO: send success message to customer with the sold fuel, fuel amount, fuel station name, and location (town name)
+
+        return res.json({ success: true });
+
+    } catch (error) {
+        // error happens in the transaction
+        await session.abortTransaction(); // abort the transaction and rollback changes
+        session.endSession(); // end the session
+
+        // fuel station registration unsuccessful
+        res.status(400).json({ "message": "Fuel sale recording failed" });// send failure message as the response
+    }
+}
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -494,5 +664,9 @@ module.exports = {
     getFuelStationLocation,
     setFuelStationLocation,
     MFEGetFuelStationDetails,
-    setInitFuelStat
+    setInitFuelStat,
+    getCustomerDetails,
+    getFuelStationDetailsByRegNumber,
+    getQueuedVehicles,
+    recordFuelSale
 }
