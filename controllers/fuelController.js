@@ -40,6 +40,27 @@ const updateFuelAllocations = async () => {
     return result;
 }
 
+// get the fuel allocation of every vehicle type
+// return the fuel allocation of every vehicle type
+// called by the index file so no request or response to or from the frontend
+const getFuelAllocations = async () => {
+    // get the current fuel allocations from the database
+    const fuel = await Fuel.findOne({}).select({
+        "MotorCycle": 1,
+        "ThreeWheeler": 1,
+        "Other Petrol Vehicle": 1,
+        "Small Diesel Vehicle": 1,
+        "Large Diesel Vehicle": 1
+    });
+
+    const fuelAllocation = _.pick(fuel, [
+        "MotorCycle", "ThreeWheeler", "Other Petrol Vehicle", "Small Diesel Vehicle", "Large Diesel Vehicle"
+    ]);
+
+    return fuelAllocation;
+}
+
 module.exports = {
-    updateFuelAllocations
+    updateFuelAllocations,
+    getFuelAllocations
 }
