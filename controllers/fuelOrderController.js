@@ -61,7 +61,7 @@ const getFuelOrderDetailsMFE = async (req,res) => {
 
 // register a fuel delivery in the system
 // if this is called it is made sure that the fuel delivery is valid and does not already exist in the system
-const registerFuelDelivery= async (req, res) => {
+const registerFuelDelivery = async (req, res) => {
     // start a seesion to enable transactions in the database
     const session = await startSession();
     // FIXME: sessions not working
