@@ -350,15 +350,21 @@ const setFuelStatus = async (req, res) => {
                     await vehicle.save(); // save the updated vehicle details in the database
                 }
 
+                let sendQueueRemovalNotificationsResult = true;
                 if (Object.keys(toBeRemovedVehicles).length > 0) {
                     // send queue removal and fuel exhausted notifications to customers whose vehicles should be removed from the queue
-                    await sendQueueRemovalNotifications(toBeRemovedVehicles, fuel, fuelDetails.name, fuelDetails.address);
-                }
-                if (Object.keys(toBeNotifiedVehicles).length > 0) {
-                    // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
-                    await sendFuelExhaustedNotifications(toBeNotifiedVehicles, fuel, fuelDetails.name, fuelDetails.address);
+                    sendQueueRemovalNotificationsResult = await sendQueueRemovalNotifications(toBeRemovedVehicles, fuel, fuelDetails.name, fuelDetails.address);
                 }
 
+                let sendFuelExhaustedNotificationsResult = true;
+                if (Object.keys(toBeNotifiedVehicles).length > 0) {
+                    // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
+                    sendFuelExhaustedNotificationsResult = await sendFuelExhaustedNotifications(toBeNotifiedVehicles, fuel, fuelDetails.name, fuelDetails.address);
+                }
+                
+                if (!(sendQueueRemovalNotificationsResult && sendFuelExhaustedNotificationsResult))
+                    throw "Sending notifications failed";
+            
                 await fuelDetails.save(); // save the updated fuel station details in the database
                 await session.commitTransaction(); // database update successful, commit the transaction
                 session.endSession(); // end the session
@@ -368,7 +374,7 @@ const setFuelStatus = async (req, res) => {
 
             }
             else
-                return res.json({ "success": false, "message": "Setting fuel status failed" });
+                return res.json({ "success": false, "message": "Setting fuel status failed. Try again" });
         }
     } catch (error) {
         // error happens in the transaction
@@ -376,7 +382,7 @@ const setFuelStatus = async (req, res) => {
         session.endSession(); // end the session
 
         // setting fuel status unsuccessful
-        res.status(400).json({"success": false, "message": "Setting fuel status failed" });// send failure message as the response
+        return res.json({"success": false, "message": "Setting fuel status failed. Try again" });// send failure message as the response
     }
     
 }
@@ -643,6 +649,7 @@ const getQueuedVehicles = async (uid) => {
     }
 }
 
+// record the fuel sale to a customer
 const recordFuelSale = async (req, res) => {
     // start a seesion to enable transactions in the database
     const session = await startSession();
@@ -709,7 +716,13 @@ const recordFuelSale = async (req, res) => {
         await vehicle.save(); // save the updated vehicle details in the database
 
         // send success message to customer with the sold fuel, fuel amount, fuel station name, and location (town name)
-        await sendFuelSaleNotification(mobileNumber, fuel, fuelSale, fuelStation.name, fuelStation.address);
+        const result = await sendFuelSaleNotification(mobileNumber, fuel, fuelSale, fuelStation.name, fuelStation.address);
+
+        if (!result)
+            throw "Fuel sale notification sending failed. Try again.";
+
+        await session.commitTransaction(); // database update successful, commit the transaction
+        session.endSession(); // end the session
 
         return res.json({ success: true });
 
