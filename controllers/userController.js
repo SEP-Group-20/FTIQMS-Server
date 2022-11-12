@@ -196,13 +196,10 @@ const updatePWD = async (req, res) => {
 }
 
 const getUserDetails = async (req, res) => { //get user details
-    try {
-        const details = await User.findById(req.userID)
-        return res.status(200).send(details)
-    } catch (error) {
-        return res.status(500).send(error)
-    }
-
+    
+    const details = await User.findById(req.userID,{firstName:1, lastName:1, NIC:1, mobile:1, vehicles:1});
+    return res.send(details);
+    
 }
 
 module.exports = {
