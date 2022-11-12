@@ -736,6 +736,27 @@ const recordFuelSale = async (req, res) => {
     }
 }
 
+// get the details of the fuel station from the system database given the fuel station id.
+// return the details of the fuel station or an error
+// called by the customer controller so no request or response to or from the frontend
+const getFuelStation = async (fsid) => {
+    // get the details of the fuel station from the database using the fuel station id
+    const result = await FuelStation.findOne({
+        _id:fsid
+    });
+
+    // if such a fuel station details cannot be retirved, send failure flag as the response
+    if (!result)
+        return ({success: false});
+    else{
+        // if fuel station details are retirved, send the details of it and a success flag as the response
+        return ({
+            success: true,
+            fuelStation: result
+        });
+    }
+}
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -754,5 +775,6 @@ module.exports = {
     getCustomerDetails,
     getFuelStationDetailsByRegNumber,
     getQueuedVehicles,
-    recordFuelSale
+    recordFuelSale,
+    getFuelStation
 }
