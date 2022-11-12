@@ -3,6 +3,7 @@ const _ = require('lodash');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { EMAIL_REGEX, NAME_REGEX, MOBILE_REGEX, User } = require('../models/User');
+const { FuelStation } = require('../models/FuelStation');
 const ROLES_LIST = require('../utils/rolesList');
 const admin = require('../utils/firebaseAdminService');
 
@@ -102,6 +103,29 @@ const login = async (req, res) => {
         //send refresh token as http-only cokies
         res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['email', '_id', 'role']) });
+
+    }
+}
+
+/*this is login funtionality for the fusel station staff users */
+const FSSLogin = async (req, res) => {
+    const registrationNumber = req.body.registrationNumber;
+    const password = req.body.pwd;
+    if (!registrationNumber || !password) return res.sendStatus(400); //bad request
+
+    //find user by the registrationNumber
+    const user = await FuelStation.findOne({ registrationNumber: registrationNumber })
+        .select({ registrationNumber: 1, staffPassword: 1});
+    if (!user) return res.sendStatus(401);
+
+    //compare two passwords
+    const result = await bcrypt.compare(password, user.staffPassword);
+
+    if (!result) {
+        return res.sendStatus(401);
+    } else {
+        //send refresh token to user as a http-only cokie
+        res.send({user: _.pick(user, ['registrationNumber'])});
 
     }
 }
@@ -302,6 +326,7 @@ module.exports = {
     logout,
     checkNIC,
     customerLogin,
+    FSSLogin,
     getMobileByNIC,
     validateFirebaseAndLogin,
     validateCustomer

@@ -202,6 +202,27 @@ const getUserDetails = async (req, res) => { //get user details
     
 }
 
+// get details of a customer given the NIC
+const getCustomerDetailsByNIC = async (NIC) => {
+    // get the logged in user's details using the customer's NIC number from the database
+    const result = await User.findOne({
+        NIC: NIC,
+        role: 5000
+    });
+
+    // if user detail retrival is a failure send a error flag as the response
+    if (!result)
+        return ({success: false});
+    else {
+        // get the _id, NIC, firstname, lastname, mobile number, fuelAllocation, fuelRemaining from the user's details
+        // and send only those in the response with a success flag
+        return ({
+            success: true,
+            customer: _.pick(result, ["_id", "NIC", "firstName", "lastName", "mobile", "fuelStations", "fuelAllocation", "remainingFuel"])
+        });
+    }
+} 
+
 module.exports = {
     getUserByNIC,
     getUsername,
@@ -213,6 +234,7 @@ module.exports = {
     getUsernameByEmail,
     generatePWD,
     updatePWD,
-    getUserDetails
+    getUserDetails,
+    getCustomerDetailsByNIC
 }
 

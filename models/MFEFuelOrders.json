@@ -64,7 +64,7 @@
         "deliveryID": "DNF1234657",
         "fuelStationRegistrationNumber": "ASD1234567",
         "fuel": "Petrol",
-        "fuelAmount": 6000,
+        "fuelAmount": 40,
         "value": 3100000,
         "orderDate": "13/10/2022",
         "deliveryDate": "18/10/2022"

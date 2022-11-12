@@ -10,6 +10,10 @@ const sendMail = require("../utils/emailService");
 const MFEFuelStations = require('../models/MFEFuelStations.json');
 const { getFuelDelivery } = require('./fuelOrderController');
 const { SET_FUEL_STATUS, SET_LOCATION, PWD_UPDATED } = require('../utils/ManagerStatuses');
+const { ACTIVE_FS } = require('../utils/fuelStationStatuses');
+const { getCustomerDetailsByNIC } = require('./userController');
+const { Vehicle } = require('../models/Vehicle');
+const { sendQueueRemovalNotifications, sendFuelExhaustedNotifications, sendFuelSaleNotification } = require('./messageController');
 
 const SALT_ROUNDS = 9;
 const FUEL_THRESHOLDS = { "Petrol": 100, "Diesel": 100 };
@@ -190,7 +194,7 @@ const getFuelStationRegistrationNumber = async (req, res) => {
     }
 }
 
-// TODO: EDIT THE FUNCTION TO EGT THE FUEL STATION DETAILS
+// TODO: EDIT THE FUNCTION TO GET THE FUEL STATION DETAILS
 
 // get the details of the fuel station from the system database given the fuel station id.
 // return the details of the fuel station or an error
@@ -273,39 +277,114 @@ const getFuelDetails = async (req, res) => {
 
 // set the fuel status of the fuel
 const setFuelStatus = async (req, res) => {
+    // start a seesion to enable transactions in the database
+    const session = await startSession();
+    // FIXME: sessions not working
+    try {
+        // start transction
+        // because we need to ensure ACID properties when entering data to multiple models
+        session.startTransaction();
 
-    // if fuel station registration number or fuel or status is not set send a error response
-    if (!req.body.registrationNumber || !req.body.fuel)
-        return res.sendStatus(400);
+        // if fuel station registration number or fuel or status is not set send a error response
+        if (!req.body.registrationNumber || !req.body.fuel)
+            return res.sendStatus(400);
 
-    // get the fuel types sold, remaining fuel amounts and fuel availability status using the fuel station registration number from the database
-    const fuelDetails = await FuelStation.findOne({
-        registrationNumber: req.body.registrationNumber
-    }).select({
-        fuelSold: 1,
-        remainingFuel: 1,
-        fuelAvailability: 1
-    });
+        // get the fuel types sold, remaining fuel amounts and fuel availability status using the fuel station registration number from the database
+        const fuelDetails = await FuelStation.findOne({
+            registrationNumber: req.body.registrationNumber
+        }).select({
+            name: 1,
+            address: 1,
+            fuelSold: 1,
+            remainingFuel: 1,
+            fuelAvailability: 1,
+            fuelQueue: 1
+        });
 
-    // if such a fuel details cannot be retirved, send failure flag as the response
-    if (!fuelDetails)
-        return res.json({ success: false });
-    else {
-        const fuel = req.body.fuel;
-        // if fuel details are retirved, check if the request data are valid and set the status
-        if (fuelDetails.remainingFuel[fuel] <= FUEL_THRESHOLDS[fuel]) {
-            fuelDetails.fuelAvailability[fuel] = req.body.status;
-            await fuelDetails.save(); // save the updated fuel station details in the database
-
-            // TODO: send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
-
-            return res.json({
-                success: true
-            });
-        }
-        else
+        // if such a fuel details cannot be retirved, send failure flag as the response
+        if (!fuelDetails)
             return res.json({ success: false });
+        else {
+            const fuel = req.body.fuel;
+
+            // if fuel details are retirved, check if the request data are valid and set the status
+            if (fuelDetails.remainingFuel[fuel] <= FUEL_THRESHOLDS[fuel]) {
+                fuelDetails.fuelAvailability[fuel] = req.body.status;
+
+                // get the relevant fuel queue
+                const fuelQueueVehicles = JSON.parse(JSON.stringify(fuelDetails.fuelQueue[fuel]));
+
+                let toBeRemovedVehicles = {};
+                let toBeNotifiedVehicles = {};
+
+                for (const vid of fuelQueueVehicles) {
+                    // get the details of the vehicle from the database using the vehicle id
+                    const vehicle = await Vehicle.findOne({
+                        _id: vid
+                    }).select({
+                        isQueued: 1,
+                        notificationsSent: 1,
+                        registeredUnder: 1
+                    });
+
+                    if (vehicle.isQueued && vehicle.notificationsSent >= 2) {
+                        // add the vehicle id and customer id to the removed list
+                        toBeRemovedVehicles[vid] = vehicle.registeredUnder;
+
+                        // get the index of the vehicle id
+                        const index = fuelQueueVehicles.indexOf(vid);
+
+                        if (index > -1) {
+                            // remove the vehicle form the fuel queue
+                            fuelDetails.fuelQueue[fuel].splice(index, 1);
+
+                            // update the deatils of the vehicle
+                            vehicle.isQueued = false;
+                            vehicle.notificationsSent = 0;
+                        }
+                    }
+                    else if (vehicle.isQueued && vehicle.notificationsSent > 0 && vehicle.notificationsSent < 2) {
+                        toBeNotifiedVehicles[vid] = vehicle.registeredUnder;
+                    }
+
+                    await vehicle.save(); // save the updated vehicle details in the database
+                }
+
+                let sendQueueRemovalNotificationsResult = true;
+                if (Object.keys(toBeRemovedVehicles).length > 0) {
+                    // send queue removal and fuel exhausted notifications to customers whose vehicles should be removed from the queue
+                    sendQueueRemovalNotificationsResult = await sendQueueRemovalNotifications(toBeRemovedVehicles, fuel, fuelDetails.name, fuelDetails.address);
+                }
+
+                let sendFuelExhaustedNotificationsResult = true;
+                if (Object.keys(toBeNotifiedVehicles).length > 0) {
+                    // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
+                    sendFuelExhaustedNotificationsResult = await sendFuelExhaustedNotifications(toBeNotifiedVehicles, fuel, fuelDetails.name, fuelDetails.address);
+                }
+                
+                if (!(sendQueueRemovalNotificationsResult && sendFuelExhaustedNotificationsResult))
+                    throw "Sending notifications failed";
+            
+                await fuelDetails.save(); // save the updated fuel station details in the database
+                await session.commitTransaction(); // database update successful, commit the transaction
+                session.endSession(); // end the session
+        
+                // setting fuel status successful
+                res.status(201).json({"success": true, "message": "Setting fuel status successful" }); // send success message as the response
+
+            }
+            else
+                return res.json({ "success": false, "message": "Setting fuel status failed. Try again" });
+        }
+    } catch (error) {
+        // error happens in the transaction
+        await session.abortTransaction(); // abort the transaction and rollback changes
+        session.endSession(); // end the session
+
+        // setting fuel status unsuccessful
+        return res.json({"success": false, "message": "Setting fuel status failed. Try again" });// send failure message as the response
     }
+    
 }
 
 // Dummy MFE fuel stations API connected to a MFEFuelStations.json file to simulate the process
@@ -456,12 +535,12 @@ const fuelObjectSchema = Joi.object({
     diesel: Joi.number().min(0).required()
 });
 
-setInitFuelStat = async (req, res) => {
+const setInitFuelStat = async (req, res) => {
     if (!req.body?.fuel) return res.sendStatus(400); //bad request if no data
 
     fuelObjectSchema.validate(req.body.fuel);
 
-    //FIXME - need a transaction here
+    //FIXME: - need a transaction here
     const station = await FuelStation.findOne({ ownerUID: req.userID }, { remainingFuel: 1, fuelAvailability: 1 })
     station.remainingFuel = req.body.fuel;
     let petrol_av = false;
@@ -469,6 +548,7 @@ setInitFuelStat = async (req, res) => {
     if (req.body.fuel.Petrol > 0) petrol_av = true;
     if (req.body.fuel.Diesel > 0) diesel_av = true;
     station.fuelAvailability = { Petrol: petrol_av, Diesel: diesel_av };
+    station.status = ACTIVE_FS;
     const result = await station.save();
     const user = await User.findById(req.userID, { status: 1 });
     if (user.status === PWD_UPDATED) {
@@ -476,6 +556,205 @@ setInitFuelStat = async (req, res) => {
         await user.save();
     }
     if (result) res.json({ success: true });
+}
+
+const getCustomerDetails = async (req, res) => {
+    if (!req.body.registrationNumber || !req.body.userNIC)
+        return res.json({ success: false, message: "User NIC or Fuel station registration number not set" });
+    
+    const NIC = req.body.userNIC;
+    const registrationNumber = req.body.registrationNumber;
+
+    let customer = await getCustomerDetailsByNIC(NIC);
+    let fuelStation = await getFuelStationDetailsByRegNumber(registrationNumber);
+
+    if (!customer.success)
+        return res.json({ success: false, message: "Customer not registered in system" });
+
+    customer = customer.customer;
+    fuelStation = fuelStation.fuelStation;
+    
+    if (!customer.fuelStations.includes(fuelStation._id))
+        return res.json({ success: false, message: "Customer not registered in this fuel station" });
+
+    const vehicles = await getQueuedVehicles(customer._id);
+
+    if (!vehicles.success)
+        return res.json({ success: false, message: "Vehicles not queued or not notified" });
+    
+    const vehicleList = vehicles.vehicleList;
+
+    let fuelSaleEligibleVehicles = {}
+
+    for (let index = 0; index < vehicleList.length; index++) {
+        const vehicle = vehicleList[index];
+        if (fuelStation.fuelQueue[vehicle.fuelType].includes(vehicle._id))
+            fuelSaleEligibleVehicles[vehicle.fuelType] = vehicle._id;
+    }
+    if (Object.keys(fuelSaleEligibleVehicles).length === 0)
+        return res.json({ success: false, message: "Vehicles not queued in this fuel station" });
+
+    let customerDetails = {};
+    customerDetails["customer"] = customer;
+    customerDetails["fuelStation"] = fuelStation;
+    customerDetails["fuelSaleEligibleVehicles"] = fuelSaleEligibleVehicles;
+
+    return res.json({ success: true, customerDetails: customerDetails });
+}
+
+// get details of a fuel station given the registration number
+const getFuelStationDetailsByRegNumber = async (registrationNumber) => {
+    // get the logged in fuel station details using the fuel station registration number from the database
+    const result = await FuelStation.findOne({
+        registrationNumber: registrationNumber
+    });
+
+    // if fuel station detail retrival is a failure send a error flag as the response
+    if (!result)
+        return ({success: false});
+    else {
+        // get the _id, fuel queues and remaining fuel of the fuel station
+        // and send only those in the response with a success flag
+        return ({
+            success: true,
+            fuelStation: _.pick(result, ["_id", "fuelQueue", "remainingFuel"])
+        });
+    }
+}
+
+// get the queued vehicles of a customer given the id
+const getQueuedVehicles = async (uid) => {
+    // get the queued vehicles and notified vehicles of a customer
+    const result = await Vehicle.find({
+        registeredUnder: uid,
+        isQueued: true,
+        notificationsSent: { $gt: 0 }
+    }).select({
+        _id: 1,
+        registrationNumber: 1,
+        fuelType: 1,
+        vehicleType: 1
+    });
+
+    // if vechicle retrival is a failure send a error flag as the response
+    if (!result.length)
+        return ({success: false});
+    else {
+        // get the _id, fuel queues and remaining fuel of the fuel station
+        // and send only those in the response with a success flag
+        return ({
+            success: true,
+            vehicleList: result
+        });
+    }
+}
+
+// record the fuel sale to a customer
+const recordFuelSale = async (req, res) => {
+    // start a seesion to enable transactions in the database
+    const session = await startSession();
+    // FIXME: sessions not working
+    try {
+        // start transction
+        // because we need to ensure ACID properties when entering data to multiple models
+        session.startTransaction();
+
+        const resCustomer = req.body.customerDetails.customer;
+        const resVehicleList = req.body.customerDetails.fuelSaleEligibleVehicles;
+        const resFuelStation = req.body.customerDetails.fuelStation;
+        let fuel = req.body.fuel.toLowerCase();
+        fuel = fuel.charAt(0).toUpperCase() + fuel.slice(1)
+        const fuelSale = parseFloat(req.body.fuelSale);
+        const vid = resVehicleList[fuel];
+
+        // get the details of the vehicle from the database using the vehicle id
+        const vehicle = await Vehicle.findOne({
+            _id: vid
+        }).select({
+            isQueued: 1,
+            notificationsSent: 1
+        });
+
+        // get the details of the fuel station from the database using the vehicle id
+        const fuelStation = await FuelStation.findOne({
+            _id: resFuelStation._id
+        }).select({
+            name: 1,
+            address: 1,
+            remainingFuel: 1,
+            fuelQueue: 1
+        });
+
+        // get the details of the customer from the database using the vehicle id
+        const customer = await User.findOne({
+            _id: resCustomer._id
+        }).select({
+            mobile: 1,
+            remainingFuel: 1
+        });
+
+        const mobileNumber = customer.mobile;
+        
+        // decrease the remaining fuel amount of the fuel station by the sold fuel amount of the sold fuel
+        fuelStation.remainingFuel[fuel] -= fuelSale;
+
+        // remove the vehicle that was fueled from the relevant fuel queue of the fuel station
+        const index = fuelStation.fuelQueue[fuel].indexOf(vehicle._id);
+
+        if (index > -1)
+            fuelStation.fuelQueue[fuel].splice(index, 1);
+
+        // decrease the remaining fuel amount of the customer by the sold fuel amount of the sold fuel
+        customer.remainingFuel[fuel] -= fuelSale;
+
+        // set the vehicle as not queued and not notified
+        vehicle.isQueued = false;
+        vehicle.notificationsSent = 0;
+
+        await fuelStation.save(); // save the updated fuel station details in the database
+        await customer.save(); // save the updated customer details in the database
+        await vehicle.save(); // save the updated vehicle details in the database
+
+        // send success message to customer with the sold fuel, fuel amount, fuel station name, and location (town name)
+        const result = await sendFuelSaleNotification(mobileNumber, fuel, fuelSale, fuelStation.name, fuelStation.address);
+
+        if (!result)
+            throw "Fuel sale notification sending failed. Try again.";
+
+        await session.commitTransaction(); // database update successful, commit the transaction
+        session.endSession(); // end the session
+
+        return res.json({ success: true });
+
+    } catch (error) {
+        // error happens in the transaction
+        await session.abortTransaction(); // abort the transaction and rollback changes
+        session.endSession(); // end the session
+
+        // fuel station registration unsuccessful
+        res.status(400).json({ "message": "Fuel sale recording failed" });// send failure message as the response
+    }
+}
+
+// get the details of the fuel station from the system database given the fuel station id.
+// return the details of the fuel station or an error
+// called by the customer controller so no request or response to or from the frontend
+const getFuelStation = async (fsid) => {
+    // get the details of the fuel station from the database using the fuel station id
+    const result = await FuelStation.findOne({
+        _id:fsid
+    });
+
+    // if such a fuel station details cannot be retirved, send failure flag as the response
+    if (!result)
+        return ({success: false});
+    else{
+        // if fuel station details are retirved, send the details of it and a success flag as the response
+        return ({
+            success: true,
+            fuelStation: result
+        });
+    }
 }
 
 module.exports = {
@@ -492,5 +771,10 @@ module.exports = {
     getFuelStationLocation,
     setFuelStationLocation,
     MFEGetFuelStationDetails,
-    setInitFuelStat
+    setInitFuelStat,
+    getCustomerDetails,
+    getFuelStationDetailsByRegNumber,
+    getQueuedVehicles,
+    recordFuelSale,
+    getFuelStation
 }

@@ -16,5 +16,6 @@ router.get('/check', verifyJWT, verifyRoles(ROLES_LIST.USER), (req, res) => {
 router.post("/checkNIC", authController.checkNIC);
 router.post("/getMobileByNIC", authController.getMobileByNIC);
 router.post("/validateFirebaseAndLogin", authController.validateFirebaseAndLogin);
+router.post("/FSSLogin",authController.FSSLogin);
 
 module.exports = router;

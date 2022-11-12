@@ -4,6 +4,9 @@ const { FuelStation } = require('../models/FuelStation');
 const { User } = require('../models/User');
 const { startSession } = require('mongoose');
 const MFEFuelOrders = require('../models/MFEFuelOrders.json');
+const { Vehicle } = require('../models/Vehicle');
+const { Fuel } = require('../models/Fuel');
+const { sendQueueRemovalNotifications_fuelAvailable, sendFuelAvaiableNotifications, sendFuelAvaiableNotifications_Warning } = require('./messageController');
 
 // check if a given fuel delivery is registered before in the system, send a true or false as a response
 const checkFuelDeliveryRegistered = async (req,res)=>{
@@ -61,7 +64,7 @@ const getFuelOrderDetailsMFE = async (req,res) => {
 
 // register a fuel delivery in the system
 // if this is called it is made sure that the fuel delivery is valid and does not already exist in the system
-const registerFuelDelivery= async (req, res) => {
+const registerFuelDelivery = async (req, res) => {
     // start a seesion to enable transactions in the database
     const session = await startSession();
     // FIXME: sessions not working
@@ -116,19 +119,122 @@ const registerFuelDelivery= async (req, res) => {
         // add the newly added fuel delivery _id to the fuel orders list of the fuel station
         fuelStation.fuelOrders.push(fuelOrderID._id);
 
-        fuelQueue = fuelStation.fuelQueue[fuelDelivery.fuel]; // to find the vehicles and notify the customers fuel available
-        fuel = fuelDelivery.fuel; // send the fuel type in the fuel available notifications to customers
-        fuelStationAddress = fuelStation.address; // when sending fuel available notifications to customers send the address of the fuel station
-        fuelStationName = fuelStation.name; // when sending fuel available notifications to customers send the name of the fuel station
+        const fuelQueue = fuelStation.fuelQueue[fuelDelivery.fuel]; // to find the vehicles and notify the customers fuel available
+        const fuel = fuelDelivery.fuel; // send the fuel type in the fuel available notifications to customers
+        const fuelStationAddress = fuelStation.address; // when sending fuel available notifications to customers send the address of the fuel station
+        const fuelStationName = fuelStation.name; // when sending fuel available notifications to customers send the name of the fuel station
 
-        // console.log("fuel ", fuel)
-        // console.log("address ", fuelStationAddress)
-        // console.log("fuelQueue ", fuelQueue)
-        // console.log("fuelStationName ", fuelStationName)
+        // get a copy of the fuel queue
+        const fuelQueueVehicles = JSON.parse(JSON.stringify(fuelQueue));
+
+        let toBeRemovedVehicles = {};
+        let rawToBeNotifiedVehicles = {};
+        let toBeNotifiedVehicles = {};
+        let toBeWarnedVehicles = {};
+
+        // get the fuel allocations of vehicle types
+        // get the current fuel allocations from the database
+        const fuelAllocations = await Fuel.findOne({}).select({
+            "MotorCycle": 1,
+            "ThreeWheeler": 1,
+            "Other Petrol Vehicle": 1,
+            "Small Diesel Vehicle": 1,
+            "Large Diesel Vehicle": 1
+        });
+
+        const fuelAllocation = _.pick(fuelAllocations, [
+            "MotorCycle", "ThreeWheeler", "Other Petrol Vehicle", "Small Diesel Vehicle", "Large Diesel Vehicle"
+        ]);
+
+        for (const vid of fuelQueueVehicles) {
+            // get the details of the vehicle from the database using the vehicle id
+            const vehicle = await Vehicle.findOne({
+                _id: vid
+            }).select({
+                vehicleType: 1,
+                isQueued: 1,
+                notificationsSent: 1,
+                registeredUnder: 1
+            });
+
+            if (vehicle.isQueued && vehicle.notificationsSent >= 2) {
+                // add the vehicle id and customer id to the removed list
+                toBeRemovedVehicles[vid] = vehicle.registeredUnder;
+
+                // get the index of the vehicle id
+                const index = fuelQueueVehicles.indexOf(vid);
+
+                if (index > -1) {
+                    // remove the vehicle form the fuel queue
+                    fuelStation.fuelQueue[fuel].splice(index, 1);
+
+                    // update the deatils of the vehicle
+                    vehicle.isQueued = false;
+                    vehicle.notificationsSent = 0;
+                }
+            }
+            else if (vehicle.isQueued && vehicle.notificationsSent >= 0 && vehicle.notificationsSent < 2) {
+                rawToBeNotifiedVehicles[vid] = {
+                    "uid": vehicle.registeredUnder,
+                    "notificationsSent": vehicle.notificationsSent,
+                    "fuelAllocation": fuelAllocation[vehicle.vehicleType]
+                };
+                vehicle.notificationsSent += 1;
+            }
+
+            await vehicle.save(); // save the updated vehicle details in the database
+        }
+
+        let usedFuel = 0;
+        let addedVehicles = 0;
+        // iterate over the object of rawToBeNotifiedVehicles
+        for (const [vid, details] of Object.entries(rawToBeNotifiedVehicles)) {
+            usedFuel += details.fuelAllocation;
+             if (usedFuel <= fuelOrder.fuelAmount) {
+                if (details.notificationsSent === 0) {
+                    toBeNotifiedVehicles[vid] = details.uid;
+                }
+                else{
+                    toBeWarnedVehicles[vid] = details.uid;
+                }
+                addedVehicles += 1;
+             } else {
+                let provisonallyAddedVehicles = Math.ceil(addedVehicles/2);
+
+                for (let index = 0; index < provisonallyAddedVehicles; index++) {
+                    if (details.notificationsSent === 0) {
+                        toBeNotifiedVehicles[vid] = details.uid;
+                    }
+                    else{
+                        toBeWarnedVehicles[vid] = details.uid;
+                    } 
+                }
+                break;
+             }
+        }
+
+        let sendQueueRemovalNotificationsResult = true;
+        if (Object.keys(toBeRemovedVehicles).length > 0) {
+            // send queue removal and fuel exhausted notifications to customers whose vehicles should be removed from the queue
+            sendQueueRemovalNotificationsResult = await sendQueueRemovalNotifications_fuelAvailable(toBeRemovedVehicles, fuel, fuelStationName, fuelStationAddress);
+        }
+
+        let sendFuelAvaiableNotificationsResult = true;
+        if (Object.keys(toBeNotifiedVehicles).length > 0) {
+            // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
+            sendFuelAvaiableNotificationsResult = await sendFuelAvaiableNotifications(toBeNotifiedVehicles, fuel, fuelStationName, fuelStationAddress);
+        }
+
+        let sendFuelAvaiableNotifications_WarningResult = true;
+        if (Object.keys(toBeWarnedVehicles).length > 0) {
+            // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
+            sendFuelAvaiableNotifications_WarningResult = await sendFuelAvaiableNotifications_Warning(toBeWarnedVehicles, fuel, fuelStationName, fuelStationAddress);
+        }
+        
+        if (!(sendQueueRemovalNotificationsResult && sendFuelAvaiableNotificationsResult && sendFuelAvaiableNotifications_WarningResult))
+            throw "Sending notifications failed";
 
         await fuelStation.save(); // save the updated fuel station details in the database
-
-        // TODO: send fuel available notifications to customers
 
         await session.commitTransaction(); // database update successful, commit the transaction
         session.endSession(); // end the session
@@ -142,7 +248,7 @@ const registerFuelDelivery= async (req, res) => {
         session.endSession(); // end the session
 
         // fuel delivery record unsuccessful
-        res.status(400).json({ "message": "Fuel Station registraion failed" });// send failure message as the response
+        return res.json({ "success": false, "message": "Fuel Delivery recording failed. Try again" }); // send failure message as the response
     }
 
 }

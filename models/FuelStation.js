@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { INITED_FS, ACTIVE_FS, DELETED_FS } = require('../utils/fuelStationStatuses');
 const EMAIL_REGEX = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const NAME_REGEX = /^[a-z ,.'-]+$/i;
 const MOBILE_REGEX = /^(?:(?:\+|0{0,2})91(\s*[\ -]\s*)?|[0]?)?[456789]\d{8}|(\d[ -]?){9}\d$/;
@@ -106,19 +107,19 @@ const fuelStationSchema = mongoose.Schema({
             {
                 type: mongoose.Types.ObjectId,
                 ref: 'Vehicle'
-              }
+            }
         ],
         Diesel: [
             {
                 type: mongoose.Types.ObjectId,
                 ref: 'Vehicle'
-              }
+            }
         ],
     },
     fuelOrders: [
         {
-          type: mongoose.Types.ObjectId,
-          ref: 'FuelOrder'
+            type: mongoose.Types.ObjectId,
+            ref: 'FuelOrder'
         }
     ],
     ownerUID: {
@@ -132,6 +133,11 @@ const fuelStationSchema = mongoose.Schema({
         minlength: 5,
         maxlength: 1024
     },
+    status: {
+        type: Number,
+        default: INITED_FS,
+        enum: [INITED_FS, ACTIVE_FS, DELETED_FS]
+    }
 });
 const FuelStation = mongoose.model('FuelStation', fuelStationSchema);
 
