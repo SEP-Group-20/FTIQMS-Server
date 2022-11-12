@@ -2,11 +2,69 @@ const _ = require('lodash');
 const { User } = require('../models/User');
 const { startSession } = require('mongoose')
 const { getVehicle } = require('./vehicleController');
+const { getFuelStation } = require('./fuelStationController');
 
 // incomplete and not used any where
 const updateFuelAllocation = (fuelType, fuelAllocation) => {
     return fuelAllocation;
 }
+
+// get details of a cusomtomer 
+const getCustomerDetails = async (req, res) => {
+
+    if (!req.body.userNIC) return res.sendStatus(400);
+
+    // get the logged in customer's details using the NIC number from the database
+    const customer = await User.findOne({
+        NIC: req.body.userNIC
+    });
+
+    if (!customer) return res.sendStatus(400);
+
+    let customerDetails = _.pick(customer, [
+        "NIC",
+        "firstName",
+        "lastName",
+        "mobile",
+        "fuelAllocation",
+        "remainingFuel",
+        "vehicles",
+    ]);
+
+    customerDetails["fuelStations"] = [];
+    customerDetails["vehicles"] = [];
+
+    // for each fuel station get the details of it using the fuel station id
+    for (const fsid of customer.fuelStations) {
+        // get fuel station details by calling the function in the fuel station controller
+        const fuelStation = await getFuelStation(fsid.toString());
+
+        // check if fuel station details retrival is successful
+        if (fuelStation.success)
+            customerDetails["fuelStations"].push(fuelStation.fuelStation.name); // if successful add the fuel station details to customerDetails
+        else
+            return res.json({success: false}); // if even one fuel station details retrival is a failure stop and send a error status
+    }
+
+    // for each vehicle get the details of it using the vehicle id
+    for (const vid of customer.vehicles) {
+        // get vehicle details by calling the function in the vehicle controller
+        const vehicle = await getVehicle(vid.toString());
+        
+        // check if vehicle details retrival is successful
+        if (vehicle.success)
+            customerDetails["vehicles"].push(vehicle.vehicle); // if successful add the vehicle details to the list
+        else
+            return res.json({success: false}); // if even one vehicle details retrival is a failure stop and send a error status
+    }
+
+    // if all vehicle detail retrival is successful send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        customerDetails: customerDetails
+    });
+}
+
 
 // get details of all the registered vehicles of a cusomtomer 
 const getAllRegisteredVehicles = async (req, res) => {
@@ -127,6 +185,7 @@ const updateCustomerFuelAllocation = async (newFuelAllocation) => {
 
 
 module.exports = {
+    getCustomerDetails,
     updateFuelAllocation,
     getAllRegisteredVehicles,
     getRemainingFuel,
