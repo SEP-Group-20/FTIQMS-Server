@@ -215,7 +215,7 @@ const getCustomerDetailsByNIC = async (NIC) => {
 
     // if user detail retrival is a failure send a error flag as the response
     if (!result)
-        return ({success: false});
+        return ({ success: false });
     else {
         // get the _id, NIC, firstname, lastname, mobile number, fuelAllocation, fuelRemaining from the user's details
         // and send only those in the response with a success flag
@@ -224,7 +224,30 @@ const getCustomerDetailsByNIC = async (NIC) => {
             customer: _.pick(result, ["_id", "NIC", "firstName", "lastName", "mobile", "fuelStations", "fuelAllocation", "remainingFuel"])
         });
     }
-} 
+}
+
+/*this function returns fuel station id's that are selected by the customer */
+const getSelectedFuelStations = async (req, res) => {
+
+    //find the users selected fuel stations from the database
+    const result = await User.findById(req.userID, { fuelStations: 1 });
+
+    // console.log(result);
+    res.json(result);
+}
+
+/*this piece of function find the user for given user id and update the fuelstations array */
+const setSelectedFuelStations = async (req, res) => {
+
+    if (!req.body.fuelStations) return res.sendStatus(400); // return bad request status code if no fuel stations given
+
+    //first find the user from the database
+    const station = await User.findById(req.userID, { fuelStations: 1 });
+    station.fuelStations = req.body.fuelStations;
+    await station.save();
+
+    res.sendStatus(200);
+}
 
 module.exports = {
     getUserByNIC,
@@ -238,6 +261,8 @@ module.exports = {
     generatePWD,
     updatePWD,
     getUserDetails,
-    getCustomerDetailsByNIC
+    getCustomerDetailsByNIC,
+    getSelectedFuelStations,
+    setSelectedFuelStations
 }
 
