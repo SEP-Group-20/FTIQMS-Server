@@ -11,8 +11,10 @@ router.post("/registerAdmin", errHandler(userController.registerAdmin));
 router.post('/isEmailRegistered', userController.getUserByEmail);
 router.post("/getAllAdminDetails", userController.getAllAdmins);
 router.post("/getAllFSMDetails", userController.getAllFSMs);
-router.post("/updatePwd",verifyJWT, userController.updatePWD);
-router.post("/getUserDetails",verifyJWT, userController.getUserDetails)
+router.post("/updatePwd", verifyJWT, userController.updatePWD);
+router.post("/getUserDetails", verifyJWT, userController.getUserDetails);
+router.get("/getSelectedFuelStations", verifyJWT, userController.getSelectedFuelStations);
+router.post("/setSelectedFuelStations", verifyJWT, userController.setSelectedFuelStations)
 
 
 
