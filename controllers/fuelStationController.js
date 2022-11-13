@@ -361,16 +361,16 @@ const setFuelStatus = async (req, res) => {
                     // send fuel exhausted notifications to queued cutomers who were sent a fuel avaiable notification
                     sendFuelExhaustedNotificationsResult = await sendFuelExhaustedNotifications(toBeNotifiedVehicles, fuel, fuelDetails.name, fuelDetails.address);
                 }
-                
+
                 if (!(sendQueueRemovalNotificationsResult && sendFuelExhaustedNotificationsResult))
                     throw "Sending notifications failed";
-            
+
                 await fuelDetails.save(); // save the updated fuel station details in the database
                 await session.commitTransaction(); // database update successful, commit the transaction
                 session.endSession(); // end the session
-        
+
                 // setting fuel status successful
-                res.status(201).json({"success": true, "message": "Setting fuel status successful" }); // send success message as the response
+                res.status(201).json({ "success": true, "message": "Setting fuel status successful" }); // send success message as the response
 
             }
             else
@@ -382,9 +382,9 @@ const setFuelStatus = async (req, res) => {
         session.endSession(); // end the session
 
         // setting fuel status unsuccessful
-        return res.json({"success": false, "message": "Setting fuel status failed. Try again" });// send failure message as the response
+        return res.json({ "success": false, "message": "Setting fuel status failed. Try again" });// send failure message as the response
     }
-    
+
 }
 
 // Dummy MFE fuel stations API connected to a MFEFuelStations.json file to simulate the process
@@ -561,7 +561,7 @@ const setInitFuelStat = async (req, res) => {
 const getCustomerDetails = async (req, res) => {
     if (!req.body.registrationNumber || !req.body.userNIC)
         return res.json({ success: false, message: "User NIC or Fuel station registration number not set" });
-    
+
     const NIC = req.body.userNIC;
     const registrationNumber = req.body.registrationNumber;
 
@@ -573,7 +573,7 @@ const getCustomerDetails = async (req, res) => {
 
     customer = customer.customer;
     fuelStation = fuelStation.fuelStation;
-    
+
     if (!customer.fuelStations.includes(fuelStation._id))
         return res.json({ success: false, message: "Customer not registered in this fuel station" });
 
@@ -581,7 +581,7 @@ const getCustomerDetails = async (req, res) => {
 
     if (!vehicles.success)
         return res.json({ success: false, message: "Vehicles not queued or not notified" });
-    
+
     const vehicleList = vehicles.vehicleList;
 
     let fuelSaleEligibleVehicles = {}
@@ -611,7 +611,7 @@ const getFuelStationDetailsByRegNumber = async (registrationNumber) => {
 
     // if fuel station detail retrival is a failure send a error flag as the response
     if (!result)
-        return ({success: false});
+        return ({ success: false });
     else {
         // get the _id, fuel queues and remaining fuel of the fuel station
         // and send only those in the response with a success flag
@@ -638,7 +638,7 @@ const getQueuedVehicles = async (uid) => {
 
     // if vechicle retrival is a failure send a error flag as the response
     if (!result.length)
-        return ({success: false});
+        return ({ success: false });
     else {
         // get the _id, fuel queues and remaining fuel of the fuel station
         // and send only those in the response with a success flag
@@ -694,7 +694,7 @@ const recordFuelSale = async (req, res) => {
         });
 
         const mobileNumber = customer.mobile;
-        
+
         // decrease the remaining fuel amount of the fuel station by the sold fuel amount of the sold fuel
         fuelStation.remainingFuel[fuel] -= fuelSale;
 
@@ -742,19 +742,36 @@ const recordFuelSale = async (req, res) => {
 const getFuelStation = async (fsid) => {
     // get the details of the fuel station from the database using the fuel station id
     const result = await FuelStation.findOne({
-        _id:fsid
+        _id: fsid
     });
 
     // if such a fuel station details cannot be retirved, send failure flag as the response
     if (!result)
-        return ({success: false});
-    else{
+        return ({ success: false });
+    else {
         // if fuel station details are retirved, send the details of it and a success flag as the response
         return ({
             success: true,
             fuelStation: result
         });
     }
+}
+
+/*this piece of functions sends names and their locations of all the fuel
+stations in the response */
+const getAllFuelStations = async (req, res) => {
+    const result = await FuelStation.find({ status: ACTIVE_FS }, { name: 1, location: 1 });
+    // console.log(result);
+    res.json(result);
+}
+
+/*This fuction returns the details of fuel station for given fuelstation id */
+const getFuelStationById = async (req, res) => {
+    if (!req.params.fid) return res.sendStatus(400);
+
+    const station = await FuelStation.findById(req.params.fid, { name: 1, address: 1, mobile: 1 });
+
+    res.json(station)
 }
 
 module.exports = {
@@ -776,5 +793,7 @@ module.exports = {
     getFuelStationDetailsByRegNumber,
     getQueuedVehicles,
     recordFuelSale,
-    getFuelStation
+    getFuelStation,
+    getAllFuelStations,
+    getFuelStationById
 }

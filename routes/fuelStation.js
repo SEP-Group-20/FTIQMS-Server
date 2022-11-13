@@ -12,10 +12,13 @@ router.post("/getFuelDetails", fuelStationController.getFuelDetails);
 router.post("/setFuelStatus", fuelStationController.setFuelStatus);
 router.post("/register", fuelStationController.registerFuelStation);
 router.post("/getAllFuelDeliveryDetails", fuelStationController.getAllFuelDeliveries);
-router.get("/getFuelStationLocation/:managerId",fuelStationController.getFuelStationLocation);
-router.post("/setFuelStationLocation",fuelStationController.setFuelStationLocation);
-router.post("/setInitFuelStatus",verifyJWT,fuelStationController.setInitFuelStat);
-router.post("/getCustomerDetails",fuelStationController.getCustomerDetails);
-router.post("/recordFuelSale",fuelStationController.recordFuelSale);
+router.get("/getFuelStationLocation/:managerId", fuelStationController.getFuelStationLocation);
+router.post("/setFuelStationLocation", fuelStationController.setFuelStationLocation);
+router.post("/setInitFuelStatus", verifyJWT, fuelStationController.setInitFuelStat);
+router.post("/getCustomerDetails", fuelStationController.getCustomerDetails);
+router.post("/recordFuelSale", fuelStationController.recordFuelSale);
+
+router.get("/getAllFuelStations", fuelStationController.getAllFuelStations);
+router.get("/getFuelStationById/:fid", fuelStationController.getFuelStationById)
 
 module.exports = router;
