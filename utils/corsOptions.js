@@ -1,10 +1,12 @@
-const config = require('config');
+const { split } = require('lodash');
 
 const coresOptions = {
 
     origin: (origin, callback) => {
         //accept requests only from allowed origins
-        if (!origin || config.AlloweOrigins.indexOf(origin) !== -1) {
+
+        const allowedOrigins = split(process.env.ALLOWED_ORIGINS, ",");
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));

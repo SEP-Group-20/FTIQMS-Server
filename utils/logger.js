@@ -1,7 +1,7 @@
 const { format, transports, createLogger, } = require('winston');
-// require('winston-mongodb');
-const config = require('config');
-const path = require('path');
+// // require('winston-mongodb');
+// const config = require('config');
+// const path = require('path');
 
 //specifies logging format
 const logFormat = format.printf(info => `${info.timestamp} ${info.level} [${info.label}]: ${info.message}`);
