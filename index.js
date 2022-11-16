@@ -1,7 +1,6 @@
 const express = require('express');
 const { logger } = require('./utils/logger');
 const dotenv = require('dotenv');
-const config = require('config');
 const { updateFuelAllocations } = require('./controllers/fuelController');
 const app = express();
 dotenv.config();
@@ -37,15 +36,15 @@ const getDate = () => {
     // minutes as (mm) format
     let minutes = ("0" + date_sl.getMinutes()).slice(-2);
 
-    let currentTime = hours+":"+minutes
+    let currentTime = hours + ":" + minutes
 
     return [day, currentTime];
 }
 
-(async function() {
+(async function () {
     let called = false
 
-    while(true) {
+    while (true) {
         await sleep(30000);
         let currentDayTime = getDate();
         let triggerTime = "23:55"
