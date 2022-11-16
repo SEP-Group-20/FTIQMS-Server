@@ -4,7 +4,7 @@ require('../../startup/db')();
 describe("getUsernameByNIC Unit", () => {
     describe("When NIC is invalid", () => {
         it('Should return none', async () => {
-            const result = await userController.getUsernameByNIC("200207802500V");
+            const result = await userController.getUsernameByNIC("200207802500");
             expect(result).toEqual(null);
         });
     });
@@ -14,7 +14,7 @@ describe("getUsernameByNIC Unit", () => {
                 "firstName": "Rakindu",
                 "lastName": "Paranayapa"
             };
-            const result = await userController.getUsernameByNIC("200207802507V");
+            const result = await userController.getUsernameByNIC("200207802507");
             expect(result.firstName).toEqual(user.firstName);
             expect(result.lastName).toEqual(user.lastName);
         });
