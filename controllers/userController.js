@@ -249,6 +249,53 @@ const setSelectedFuelStations = async (req, res) => {
     res.sendStatus(200);
 }
 
+// reset the password of the fuel station manager
+const resetFSMPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in fuel station manager's password using the fuel station manager's email from the database
+    const user = await User.findOne({
+        email: req.body.userEmail
+    }).select({
+        password: 1
+    });
+
+    if (!user) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, user.password);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    user.password = newHash;
+
+    // save the updated fuel station manager
+    await user.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
 module.exports = {
     getUserByNIC,
     getUsername,
@@ -263,6 +310,7 @@ module.exports = {
     getUserDetails,
     getCustomerDetailsByNIC,
     getSelectedFuelStations,
-    setSelectedFuelStations
+    setSelectedFuelStations,
+    resetFSMPassword
 }
 

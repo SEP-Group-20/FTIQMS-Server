@@ -7,7 +7,7 @@ router.post("/checkFuelStationRegistered", fuelStationController.checkFuelStatio
 router.post("/checkFuelStationExistence", fuelStationController.checkFuelStationExistence);
 router.post("/getFuelStationDetailsMFE", fuelStationController.getFuelStationDetailsMFE);
 router.post("/getFuelStationRegistrationNumber", fuelStationController.getFuelStationRegistrationNumber);
-router.post("/getFuelStationDetails/:fid", fuelStationController.getFuelStationDetails);
+router.post("/getFuelStationDetails", fuelStationController.getFuelStationDetails);
 router.post("/getFuelDetails", fuelStationController.getFuelDetails);
 router.post("/setFuelStatus", fuelStationController.setFuelStatus);
 router.post("/register", fuelStationController.registerFuelStation);
@@ -17,8 +17,9 @@ router.post("/setFuelStationLocation", fuelStationController.setFuelStationLocat
 router.post("/setInitFuelStatus", verifyJWT, fuelStationController.setInitFuelStat);
 router.post("/getCustomerDetails", fuelStationController.getCustomerDetails);
 router.post("/recordFuelSale", fuelStationController.recordFuelSale);
-
+router.post("/getDashboardDetails", fuelStationController.getDashboardDetails);
 router.get("/getAllFuelStations", fuelStationController.getAllFuelStations);
-router.get("/getFuelStationById/:fid", fuelStationController.getFuelStationById)
+router.get("/getFuelStationById/:fid", fuelStationController.getFuelStationById);
+router.post("/resetFSSPassword", fuelStationController.resetFSSPassword);
 
 module.exports = router;
