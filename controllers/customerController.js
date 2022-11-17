@@ -13,7 +13,7 @@ const updateFuelAllocation = (fuelType, fuelAllocation) => {
     return fuelAllocation;
 }
 
-// get details of a cusomtomer 
+// get details of a customer 
 const getCustomerDetails = async (req, res) => {
 
     if (!req.body.userNIC) return res.sendStatus(400);
@@ -70,7 +70,7 @@ const getCustomerDetails = async (req, res) => {
 }
 
 
-// get details of all the registered vehicles of a cusomtomer 
+// get details of all the registered vehicles of a customer 
 const getAllRegisteredVehicles = async (req, res) => {
 
     if (!req.body.userNIC) return res.sendStatus(400);
@@ -252,7 +252,7 @@ const getDashboardDetails = async (req, res) => {
     // initialize the customer details
     let customerDetails = {"Petrol": {}, "Diesel": {}}
 
-    // set customer fuel allocations and remainign fuel details
+    // set customer fuel allocations and remaining fuel details
     customerDetails.Petrol["fuelAllocation"] = customer.fuelAllocation.Petrol;
     customerDetails.Petrol["remainingFuel"] = customer.remainingFuel.Petrol;
     customerDetails.Diesel["fuelAllocation"] = customer.fuelAllocation.Diesel;
