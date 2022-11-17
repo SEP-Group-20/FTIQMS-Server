@@ -1,8 +1,11 @@
 const _ = require('lodash');
+const bcrypt = require('bcrypt');
 const { User } = require('../models/User');
 const { startSession } = require('mongoose')
 const { getVehicle } = require('./vehicleController');
 const { getFuelStation } = require('./fuelStationController');
+
+const SALT_ROUNDS = 9;
 
 // incomplete and not used any where
 const updateFuelAllocation = (fuelType, fuelAllocation) => {
@@ -183,6 +186,48 @@ const updateCustomerFuelAllocation = async (newFuelAllocation) => {
 
 }
 
+// reset the password of the customer
+const resetPassword = async (req, res) => {
+    if (!req.body.userNIC) return res.sendStatus(400);
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in customer's password using the customer's NIC number from the database
+    const customer = await User.findOne({
+        NIC: req.body.userNIC
+    }).select({
+        password: 1
+    });
+
+    if (!customer) return res.sendStatus(400);
+
+    //compare the stored password and password which is entered by the user
+    const result = await bcrypt.compare(oldPassword, customer.password);
+
+    // check if the current password has and old password hash match
+    if (!result) {
+        return res.json({
+            success: false,
+            message: "Wrong old password"
+        });
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    customer.password = newHash;
+
+    // save the updated customer
+    await customer.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
 
 module.exports = {
     getCustomerDetails,
@@ -190,4 +235,5 @@ module.exports = {
     getAllRegisteredVehicles,
     getRemainingFuel,
     updateCustomerFuelAllocation,
+    resetPassword
 }
