@@ -8,5 +8,6 @@ router.post("/getVehicleDetailsDMT", vehicleController.getVehicleDetailsDMT);
 router.post("/getVehicleDetails/:vid", vehicleController.getVehicleDetails);
 router.post("/register", vehicleController.registerVehicle);
 router.post("/assignFuelQueue", vehicleController.assignFuelQueue);
+router.post("/removeVehicle", vehicleController.removeVehicle);
 
 module.exports = router;
