@@ -124,11 +124,15 @@ const sendNotificationsToCustomers = async (customerList, message) => {
 }
 
 // send message to customer
-const sendNotification = async (mobileNumber, message) => {
-    if (!message || !mobileNumber)
+const sendNotification = async (rawMobileNumber, message) => {
+    if (!message || !rawMobileNumber)
         return false;
 
-    const url = `https://app.notify.lk/api/v1/send?user_id=${userID}&api_key=${API_KEY}&sender_id=NotifyDEMO&to=${mobileNumber}&message=${message}`
+    const prefix = "94";
+
+    const mobileNumber = prefix.concat(rawMobileNumber.substring(1));
+
+    const url = `https://app.notify.lk/api/v1/send?user_id=${userID}&api_key=${API_KEY}&sender_id=NotifyDEMO&to=${mobileNumber}&message=${message}`;
 
     const res = await axios.get(url);
     
