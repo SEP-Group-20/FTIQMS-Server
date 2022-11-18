@@ -3,7 +3,7 @@ const { User } = require("../models/User");
 const axios = require('axios');
 
 const userID = 23918;
-const API_KEY = "ML6z6ij20VmJzzpyygNA";
+const API_KEY = process.env.MESSAGE_API_KEY;
 
 // send messages to the customers stating that their vehicle is removed form the fuel queue due to in activity
 const sendQueueRemovalNotifications = async (customerList, fuel, fuelStation, fuelStationAddress) => {

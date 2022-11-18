@@ -1,5 +1,5 @@
 var admin = require("firebase-admin");
-var serviceAccount = require("../config/firebase-service-account.json");
+var serviceAccount = require("../config/firebase-service-account");
 
 /*Here makes connection to the firebase admin service */
 admin.initializeApp({
