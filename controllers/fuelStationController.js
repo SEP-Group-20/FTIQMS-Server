@@ -757,6 +757,28 @@ const getFuelStation = async (fsid) => {
     }
 }
 
+
+const getFuelStationCount= async (req, res) => {
+    currentUserID = req.body.userID
+    
+     var fsCount = await FuelStation.aggregate([
+      {
+        $count: "fs_count"
+      }
+
+    ]
+    )
+
+    if (!fsCount)
+        return ({success: false});
+    else{
+        return res.send(fsCount);
+    }
+}
+
+
+// const getFuelDeliveryCount = async()
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -776,5 +798,6 @@ module.exports = {
     getFuelStationDetailsByRegNumber,
     getQueuedVehicles,
     recordFuelSale,
-    getFuelStation
+    getFuelStation,
+    getFuelStationCount
 }

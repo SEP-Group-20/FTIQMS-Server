@@ -17,5 +17,7 @@ router.post("/setFuelStationLocation",fuelStationController.setFuelStationLocati
 router.post("/setInitFuelStatus",verifyJWT,fuelStationController.setInitFuelStat);
 router.post("/getCustomerDetails",fuelStationController.getCustomerDetails);
 router.post("/recordFuelSale",fuelStationController.recordFuelSale);
+router.post("/getFuelStationCount",fuelStationController.getFuelStationCount);
+
 
 module.exports = router;

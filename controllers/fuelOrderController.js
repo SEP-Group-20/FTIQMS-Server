@@ -289,11 +289,47 @@ const getFuelDelivery = async (fdid) => {
     }
 }
 
+const getOrderCount = async (req, res) => {
+    currentUserID = req.body.userID
+    
+     var orderCount = await FuelOrder.aggregate([
+
+      {
+        $count: "order_count"
+      }
+
+    ]
+    )
+
+    if (!orderCount)
+        return ({success: false});
+    else{
+        return res.send(orderCount);
+    }
+}
+
+const getAllFuelDeliveries = async(req, res) =>{
+
+    const result = await FuelOrder.find({
+        
+    }).sort({orderDate:1});
+
+    if (!result)
+        return ({success: false});
+    else{
+    // if fuel order details are retirved, send the details of it and a success flag as the response
+        return res.send(result)
+    }
+
+}
+
 module.exports = {
     checkFuelDeliveryRegistered,
     checkFuelOrderExistence,
     getFuelOrderDetailsMFE,
     registerFuelDelivery,
     getFuelDelivery,
-    MFEGetFuelOrderDetails
+    MFEGetFuelOrderDetails,
+    getOrderCount,
+    getAllFuelDeliveries
 }
