@@ -715,6 +715,29 @@ const getFuelStation = async (fsid) => {
     }
 }
 
+
+
+const getFuelStationCount= async (req, res) => {
+    currentUserID = req.body.userID
+    
+     var fsCount = await FuelStation.aggregate([
+      {
+        $count: "fs_count"
+      }
+
+    ]
+    )
+
+    if (!fsCount)
+        return ({success: false});
+    else{
+        return res.send(fsCount);
+    }
+}
+
+
+// const getFuelDeliveryCount = async()
+
 /*this piece of functions sends names and their locations of all the fuel
 stations in the response */
 const getAllFuelStations = async (req, res) => {
@@ -860,6 +883,7 @@ const resetFSSPassword = async (req, res) => {
     });
 }
 
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -880,8 +904,10 @@ module.exports = {
     getQueuedVehicles,
     recordFuelSale,
     getFuelStation,
+    getFuelStationCount,
     getAllFuelStations,
     getFuelStationById,
     getDashboardDetails,
     resetFSSPassword
+
 }

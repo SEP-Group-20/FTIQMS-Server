@@ -12,6 +12,7 @@ router.post("/getFuelDetails", fuelStationController.getFuelDetails);
 router.post("/setFuelStatus", fuelStationController.setFuelStatus);
 router.post("/register", fuelStationController.registerFuelStation);
 router.post("/getAllFuelDeliveryDetails", fuelStationController.getAllFuelDeliveries);
+router.post("/getFuelStationCount",fuelStationController.getFuelStationCount);
 router.get("/getFuelStationLocation/:managerId", fuelStationController.getFuelStationLocation);
 router.post("/setFuelStationLocation", fuelStationController.setFuelStationLocation);
 router.post("/setInitFuelStatus", verifyJWT, fuelStationController.setInitFuelStat);
@@ -21,5 +22,6 @@ router.post("/getDashboardDetails", fuelStationController.getDashboardDetails);
 router.get("/getAllFuelStations", fuelStationController.getAllFuelStations);
 router.get("/getFuelStationById/:fid", fuelStationController.getFuelStationById);
 router.post("/resetFSSPassword", fuelStationController.resetFSSPassword);
+
 
 module.exports = router;
