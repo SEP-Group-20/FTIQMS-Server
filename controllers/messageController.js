@@ -1,5 +1,10 @@
 const { User } = require("../models/User");
 
+const axios = require('axios');
+
+const userID = 23918;
+const API_KEY = "ML6z6ij20VmJzzpyygNA";
+
 // send messages to the customers stating that their vehicle is removed form the fuel queue due to in activity
 const sendQueueRemovalNotifications = async (customerList, fuel, fuelStation, fuelStationAddress) => {
 
@@ -120,14 +125,14 @@ const sendNotificationsToCustomers = async (customerList, message) => {
 
 // send message to customer
 const sendNotification = async (mobileNumber, message) => {
+    if (!message || !mobileNumber)
+        return false;
 
-    console.log("sendNotification");
+    const url = `https://app.notify.lk/api/v1/send?user_id=${userID}&api_key=${API_KEY}&sender_id=NotifyDEMO&to=${mobileNumber}&message=${message}`
 
-    console.log("mobileNumber",mobileNumber);
-    console.log("message",message);
-
-    // TODO: send message to a customer
-    const result = true
+    const res = await axios.get(url);
+    
+    const result = res.data.status === "success" ? true : false;
 
     return result;
 }

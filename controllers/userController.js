@@ -251,7 +251,7 @@ const getCustomerDetailsByNIC = async (NIC) => {
 
     // if user detail retrival is a failure send a error flag as the response
     if (!result)
-        return ({success: false});
+        return ({ success: false });
     else {
         // get the _id, NIC, firstname, lastname, mobile number, fuelAllocation, fuelRemaining from the user's details
         // and send only those in the response with a success flag
@@ -261,6 +261,7 @@ const getCustomerDetailsByNIC = async (NIC) => {
         });
     }
 }
+
 
 const getFSMDetailsByID = async (req, res) => {
      
@@ -319,6 +320,94 @@ const getCustomerCount = async (req, res) => {
 }
 
 
+/*this function returns fuel station id's that are selected by the customer */
+const getSelectedFuelStations = async (req, res) => {
+
+    //find the users selected fuel stations from the database
+    const result = await User.findById(req.userID, { fuelStations: 1 });
+
+    // console.log(result);
+    res.json(result);
+}
+
+/*this piece of function find the user for given user id and update the fuelstations array */
+const setSelectedFuelStations = async (req, res) => {
+
+    if (!req.body.fuelStations) return res.sendStatus(400); // return bad request status code if no fuel stations given
+
+    //first find the user from the database
+    const station = await User.findById(req.userID, { fuelStations: 1 });
+    station.fuelStations = req.body.fuelStations;
+    await station.save();
+
+    res.sendStatus(200);
+}
+/*this controler reset the password of a user given by email */
+const resetPwd = async (req, res) => {
+    const email = req.body.email;
+    const pwd = req.body.password;
+    if (!email || !pwd) return res.sendStatus(400); // bad request if incomplete input fields
+
+    //find the user from the databse
+    const user = await User.findOne({ email: email }, { password: 1 });
+    const hash = await bcrypt.hash(pwd, SALT_ROUNDS);
+
+    //hash the new password
+    user.password = hash;
+
+    //save user into the database
+    await user.save();
+    res.sendStatus(200);
+}
+
+// reset the password of the fuel station manager
+const resetFSMPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in fuel station manager's password using the fuel station manager's email from the database
+    const user = await User.findOne({
+        email: req.body.userEmail
+    }).select({
+        password: 1
+    });
+
+    if (!user) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, user.password);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    user.password = newHash;
+
+    // save the updated fuel station manager
+    await user.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
+
 module.exports = {
     getUserByNIC,
     getUsername,
@@ -336,7 +425,11 @@ module.exports = {
     getAdminDetailsByID,
     getAllUsers,
     getFSMCount,
-    getCustomerCount
+    getCustomerCount,
+    getSelectedFuelStations,
+    setSelectedFuelStations,
+    resetPwd,
+    resetFSMPassword
 
 }
 
