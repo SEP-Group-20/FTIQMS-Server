@@ -194,48 +194,6 @@ const getFuelStationRegistrationNumber = async (req, res) => {
     }
 }
 
-// TODO: EDIT THE FUNCTION TO GET THE FUEL STATION DETAILS
-
-// get the details of the fuel station from the system database given the fuel station id.
-// return the details of the fuel station or an error
-const getFuelStationDetails = async (req, res) => {
-
-    // if fuel station id is not set send a error response
-    if (!req.params.vid)
-        return res.sendStatus(400);
-
-    // get the logged in customer's vehicle list using the customer's NIC number from the database
-    const customer = await User.findOne({
-        NIC: req.body.userNIC
-    }).select({
-        vehicles: 1
-    });
-
-    // check if the vehicle corresponding to the given vehicle id is registered under the logged in customer
-    // check the vehicle id is in the vehicle list of the customer
-    const isValidVehicle = customer.vehicles.includes(req.params.vid);
-
-    // if vehicle id is not in the vehicle list of the customer, fraudulent request, send failure message as the response
-    if (!isValidVehicle)
-        return res.json({ success: false });
-
-    // if vehicle is valid get the details of it from the database using the vehicle id
-    const result = await Vehicle.findOne({
-        _id: req.params.vid
-    });
-
-    // if such a vehicle details cannot be retirved, send failure flag as the response
-    if (!result)
-        return res.json({ success: false });
-    else {
-        // if vehicle details are retirved, send the details of it and a success flag as the response
-        return res.json({
-            success: true,
-            vehicle: result
-        });
-    }
-}
-
 // get the fuel details of the fuel station from the system database given the fuel station registration number.
 // return the details of the fuel or an error
 const getFuelDetails = async (req, res) => {
@@ -774,6 +732,134 @@ const getFuelStationById = async (req, res) => {
     res.json(station)
 }
 
+// get the details of the fuel station to display on the dashboard
+const getDashboardDetails = async (req, res) => {
+    if (!req.body.userEmail) return res.sendStatus(400);
+
+    // get the details of the fuel station from the database using the fuel station email
+    const fuelStation = await FuelStation.findOne({
+        email: req.body.userEmail
+    }).select({
+        remainingFuel: 1,
+        fuelAvailability: 1,
+        remainingFuel: 1,
+        fuelQueue: 1,
+        fuelOrders: 1
+    });
+
+    // if such a fuel station details cannot be retirved, send failure flag as the response
+    if (!fuelStation)
+        return ({ success: false });
+
+    // initialize the fuelStation details
+    let fuelStationDetails = {"Petrol": {}, "Diesel": {}}
+
+    // set fuelStation fuel status, remaining fuel and queue lengths details
+    fuelStationDetails.Petrol["remainingFuel"] = fuelStation.remainingFuel.Petrol;
+    fuelStationDetails.Diesel["remainingFuel"] = fuelStation.remainingFuel.Diesel;
+    fuelStationDetails.Petrol["fuelAvailability"] = fuelStation.fuelAvailability.Petrol;
+    fuelStationDetails.Diesel["fuelAvailability"] = fuelStation.fuelAvailability.Diesel;
+    fuelStationDetails.Petrol["queuelength"] = fuelStation.fuelQueue.Petrol.length;
+    fuelStationDetails.Diesel["queuelength"] = fuelStation.fuelQueue.Diesel.length;
+
+    // get the last fuel delivery for each fuel
+    for (let index = fuelStation.fuelOrders.length-1; index >= 0; index--) {
+        const fdid = fuelStation.fuelOrders[index];
+        // get the details of the fuel delivery
+        const rawFuelDelivery = await getFuelDelivery(fdid);
+        const fuelDelivery = rawFuelDelivery.fuelDelivery;
+        const fuel = fuelDelivery.fuel
+
+        // if a fuel delivery does not exists in the object add it
+        if (!("lastFuelDelivery" in fuelStationDetails[fuel]))
+            fuelStationDetails[fuel]["lastFuelDelivery"] = fuelDelivery;
+    }
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        fuelStationDetails: fuelStationDetails
+    });
+}
+
+// get details of a fuel station 
+const getFuelStationDetails = async (req, res) => {
+
+    if (!req.body.userEmail) return res.sendStatus(400);
+
+    // get the logged in fuel station's details using the NIC number from the database
+    const fuelStation = await FuelStation.findOne({
+        NIC: req.body.userEmail
+    });
+
+    if (!fuelStation) return res.sendStatus(400);
+
+    let fuelStationDetails = _.pick(fuelStation, [
+        "registrationNumber",
+        "name",
+        "ownerFirstName",
+        "ownerLastName",
+        "email",
+        "mobile",
+        "address",
+        "fuelSold",
+        "fuelPumps"
+    ]);
+
+    // if all fuel station detail retrival is successful send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        fuelStationDetails: fuelStationDetails
+    });
+}
+
+// reset the password of the fuel station staff
+const resetFSSPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in fuel station staff's password using the fuel station staff's email from the database
+    const user = await FuelStation.findOne({
+        email: req.body.userEmail
+    }).select({
+        staffPassword: 1
+    });
+
+    if (!user) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, user.staffPassword);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    user.staffPassword = newHash;
+
+    // save the updated fuel station staff
+    await user.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
 module.exports = {
     checkFuelStationRegistered,
     checkFuelStationExistence,
@@ -795,5 +881,7 @@ module.exports = {
     recordFuelSale,
     getFuelStation,
     getAllFuelStations,
-    getFuelStationById
+    getFuelStationById,
+    getDashboardDetails,
+    resetFSSPassword
 }
