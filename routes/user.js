@@ -14,8 +14,10 @@ router.post("/getAllFSMDetails", userController.getAllFSMs);
 router.post("/updatePwd", verifyJWT, userController.updatePWD);
 router.post("/getUserDetails", verifyJWT, userController.getUserDetails);
 router.get("/getSelectedFuelStations", verifyJWT, userController.getSelectedFuelStations);
-router.post("/setSelectedFuelStations", verifyJWT, userController.setSelectedFuelStations)
+router.post("/setSelectedFuelStations", verifyJWT, userController.setSelectedFuelStations);
+router.post("/resetUserPwd", userController.resetPwd);
 router.post('/resetFSMPassword', userController.resetFSMPassword);
+
 
 
 module.exports = router;

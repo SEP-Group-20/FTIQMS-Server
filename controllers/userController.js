@@ -248,6 +248,23 @@ const setSelectedFuelStations = async (req, res) => {
 
     res.sendStatus(200);
 }
+/*this controler reset the password of a user given by email */
+const resetPwd = async (req, res) => {
+    const email = req.body.email;
+    const pwd = req.body.password;
+    if (!email || !pwd) return res.sendStatus(400); // bad request if incomplete input fields
+
+    //find the user from the databse
+    const user = await User.findOne({ email: email }, { password: 1 });
+    const hash = await bcrypt.hash(pwd, SALT_ROUNDS);
+
+    //hash the new password
+    user.password = hash;
+
+    //save user into the database
+    await user.save();
+    res.sendStatus(200);
+}
 
 // reset the password of the fuel station manager
 const resetFSMPassword = async (req, res) => {
@@ -311,6 +328,7 @@ module.exports = {
     getCustomerDetailsByNIC,
     getSelectedFuelStations,
     setSelectedFuelStations,
+    resetPwd,
     resetFSMPassword
 }
 
