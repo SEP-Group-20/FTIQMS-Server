@@ -26,8 +26,7 @@ router.get("/getSelectedFuelStations", verifyJWT, userController.getSelectedFuel
 router.post("/setSelectedFuelStations", verifyJWT, userController.setSelectedFuelStations);
 router.post("/resetUserPwd", userController.resetPwd);
 router.post('/resetFSMPassword', userController.resetFSMPassword);
-
-
-
+router.post('/resetAdminPassword', userController.resetAdminPassword);
+router.post('/getAdminAccountDetails', userController.getAdminAccountDetails);
 
 module.exports = router;
