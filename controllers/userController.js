@@ -159,10 +159,15 @@ const getAllAdmins = async (req, res) => {
     })
 
     // if all admin detail retrival is successful send the details to the frontend as a response with a success flag
+
+    if (!result)
+        return res.json({ success: false });
+    else{
     return res.json({
         success: true,
         allAdminDetails: result
     });
+    }
 }
 
 // get details of all the fuel station managers in the system
@@ -170,15 +175,49 @@ const getAllFSMs = async (req, res) => {
     currentUserEmail = req.body.userEmail
 
     // get all fuel station manager users of the system from the database
-    const result = await User.find({
-        role: MANAGER
-    })
+    const result = await User.aggregate([
+        {$match:{role:5002} 
+    },
+    {$lookup:{
+        from:'FuelStation',
+        localField:'_id',
+        foreignField:'ownerUID',
+        as: 'fuelStation',
+    }}]
+    )
 
     // if all fuel station manager detail retrival is successful send the details to the frontend as a response with a success flag
+    if (!result)
+        return res.json({ success: false });
+    else{
     return res.json({
         success: true,
         allFSMDetails: result
     });
+    }
+}
+
+const getAllUsers = async (req, res) => {
+    currentUserEmail = req.body.userEmail
+
+    // get all admin and Fuel Station managers of the system from the database
+    const result = await User.find({
+        "$or": [{
+            role: ADMIN
+        }, {
+            role: MANAGER
+        }]
+    })
+
+    // if all admin detail retrival is successful send the details to the frontend as a response with a success flag
+    if (!result)
+        return res.json({ success: false });
+    else{
+    return res.json({
+        success: true,
+        allUserDetails: result
+    });
+    }
 }
 
 const updatePWD = async (req, res) => {
@@ -196,13 +235,10 @@ const updatePWD = async (req, res) => {
 }
 
 const getUserDetails = async (req, res) => { //get user details
-    try {
-        const details = await User.findById(req.userID)
-        return res.status(200).send(details)
-    } catch (error) {
-        return res.status(500).send(error)
-    }
-
+    
+    const details = await User.findById(req.userID,{firstName:1, lastName:1, NIC:1, mobile:1, vehicles:1});
+    return res.send(details);
+    
 }
 
 // get details of a customer given the NIC
@@ -226,6 +262,64 @@ const getCustomerDetailsByNIC = async (NIC) => {
     }
 }
 
+
+const getFSMDetailsByID = async (req, res) => {
+     
+    //fuel station manager is also a user
+    const details = await User.findById(req.body.userID,{firstName:1, lastName:1, mobile:1, email:1});
+    return res.send(details);
+}
+
+const getAdminDetailsByID = async (req, res) => {
+     
+    //admin is also a user
+    const details = await User.findById(req.body.userID,{firstName:1, lastName:1, mobile:1, email:1});
+    return res.send(details);
+}
+
+const getFSMCount = async (req, res) => {
+    currentUserID = req.body.userID
+    
+     var fsmCount = await User.aggregate([
+      {
+       $match: {role: MANAGER }
+      },
+      {
+        $count: "fsm_count"
+      }
+
+    ]
+    )
+
+    if (!fsmCount)
+        return ({success: false});
+    else{
+        return res.send(fsmCount);
+    }
+}
+
+const getCustomerCount = async (req, res) => {
+    currentUserID = req.body.userID
+    
+     var customerCount = await User.aggregate([
+      {
+       $match: {role: 5000}
+      },
+      {
+        $count: "customer_count"
+      }
+
+    ]
+    )
+
+    if (!customerCount)
+        return ({success: false});
+    else{
+        return res.send(customerCount);
+    }
+}
+
+
 /*this function returns fuel station id's that are selected by the customer */
 const getSelectedFuelStations = async (req, res) => {
 
@@ -248,6 +342,141 @@ const setSelectedFuelStations = async (req, res) => {
 
     res.sendStatus(200);
 }
+/*this controler reset the password of a user given by email */
+const resetPwd = async (req, res) => {
+    const email = req.body.email;
+    const pwd = req.body.password;
+    if (!email || !pwd) return res.sendStatus(400); // bad request if incomplete input fields
+
+    //find the user from the databse
+    const user = await User.findOne({ email: email }, { password: 1 });
+    const hash = await bcrypt.hash(pwd, SALT_ROUNDS);
+
+    //hash the new password
+    user.password = hash;
+
+    //save user into the database
+    await user.save();
+    res.sendStatus(200);
+}
+
+// reset the password of the fuel station manager
+const resetFSMPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in fuel station manager's password using the fuel station manager's email from the database
+    const user = await User.findOne({
+        email: req.body.userEmail
+    }).select({
+        password: 1
+    });
+
+    if (!user) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, user.password);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    user.password = newHash;
+
+    // save the updated fuel station manager
+    await user.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
+// get details of a admin 
+const getAdminAccountDetails = async (req, res) => {
+    if (!req.body.userEmail) return res.sendStatus(400);
+
+    // get the logged in admin's details using the NIC number from the database
+    const admin = await User.findOne({
+        email: req.body.userEmail
+    });
+
+    if (!admin) return res.sendStatus(400);
+    
+    const adminDetails = _.pick(admin, [
+        "firstName",
+        "lastName",
+        "email",
+        "mobile",
+    ]);
+
+    return res.json({
+        success: true,
+        adminDetails: adminDetails
+    });
+}
+
+// reset the password of the admin
+const resetAdminPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in admin's password using the admin's NIC number from the database
+    const admin = await User.findOne({
+        email: req.body.userEmail
+    }).select({
+        password: 1
+    });
+
+    if (!admin) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, admin.password);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    admin.password = newHash;
+
+    // save the updated admin
+    await admin.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
 
 module.exports = {
     getUserByNIC,
@@ -262,7 +491,16 @@ module.exports = {
     updatePWD,
     getUserDetails,
     getCustomerDetailsByNIC,
+    getFSMDetailsByID,
+    getAdminDetailsByID,
+    getAllUsers,
+    getFSMCount,
+    getCustomerCount,
     getSelectedFuelStations,
-    setSelectedFuelStations
+    setSelectedFuelStations,
+    resetPwd,
+    resetFSMPassword,
+    getAdminAccountDetails,
+    resetAdminPassword
 }
 

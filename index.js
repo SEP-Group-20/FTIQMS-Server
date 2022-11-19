@@ -1,9 +1,11 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const express = require('express');
 const { logger } = require('./utils/logger');
-const dotenv = require('dotenv');
+
 const { updateFuelAllocations } = require('./controllers/fuelController');
 const app = express();
-dotenv.config();
+
 
 require('./startup/validation');
 require('./startup/logging')();

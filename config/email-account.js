@@ -1,7 +1,7 @@
-{
+module.exports = {
   "service": "gmail",
   "auth": {
     "user": "ftiqms@gmail.com",
-    "pass": "zqgcwqjeuflcvgal"
+    "pass": process.env.FTIQMS_EMAIL_PWD
   }
-}
+};

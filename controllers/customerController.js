@@ -4,6 +4,7 @@ const { User } = require('../models/User');
 const { startSession } = require('mongoose')
 const { getVehicle } = require('./vehicleController');
 const { getFuelStation } = require('./fuelStationController');
+const { Vehicle } = require('../models/Vehicle');
 
 const SALT_ROUNDS = 9;
 
@@ -12,7 +13,7 @@ const updateFuelAllocation = (fuelType, fuelAllocation) => {
     return fuelAllocation;
 }
 
-// get details of a cusomtomer 
+// get details of a customer 
 const getCustomerDetails = async (req, res) => {
 
     if (!req.body.userNIC) return res.sendStatus(400);
@@ -69,7 +70,7 @@ const getCustomerDetails = async (req, res) => {
 }
 
 
-// get details of all the registered vehicles of a cusomtomer 
+// get details of all the registered vehicles of a customer 
 const getAllRegisteredVehicles = async (req, res) => {
 
     if (!req.body.userNIC) return res.sendStatus(400);
@@ -232,11 +233,65 @@ const resetPassword = async (req, res) => {
     });
 }
 
+// get the details of the customer to display on the dashboard
+const getDashboardDetails = async (req, res) => {
+    if (!req.body.userNIC) return res.sendStatus(400);
+
+    // get the logged in customer's details using the customer's NIC number from the database
+    const customer = await User.findOne({
+        NIC: req.body.userNIC
+    }).select({
+        _id: 1,
+        fuelAllocation: 1,
+        remainingFuel: 1
+    });
+
+    // if there is no such customer send an error
+    if (!customer) return res.sendStatus(400);
+
+    // initialize the customer details
+    let customerDetails = {"Petrol": {}, "Diesel": {}}
+
+    // set customer fuel allocations and remaining fuel details
+    customerDetails.Petrol["fuelAllocation"] = customer.fuelAllocation.Petrol;
+    customerDetails.Petrol["remainingFuel"] = customer.remainingFuel.Petrol;
+    customerDetails.Diesel["fuelAllocation"] = customer.fuelAllocation.Diesel;
+    customerDetails.Diesel["remainingFuel"] = customer.remainingFuel.Diesel;
+    
+    // get the logged in customer's vehicles using the customer's id from the database
+    const customerVehicles = await Vehicle.find({
+        registeredUnder: customer._id
+    }).select({
+        fuelType: 1,
+        isQueued: 1,
+        notificationsSent: 1
+    });
+    
+    // iterate over each customer vehicle
+    for (const vehicle of customerVehicles) {
+        // check if a vehicle is queued for its fuel
+        customerDetails[vehicle.fuelType]["isQueued"] = customerDetails[vehicle.fuelType]["isQueued"] || vehicle.isQueued;
+
+        // check if a vehicle has received notification for its fuel
+        if (vehicle.notificationsSent > 0)
+            customerDetails[vehicle.fuelType]["notificationsSent"] = customerDetails[vehicle.fuelType]["notificationsSent"] || true;
+        else
+        customerDetails[vehicle.fuelType]["notificationsSent"] = customerDetails[vehicle.fuelType]["notificationsSent"] || false;
+    }
+    
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        customerDetails: customerDetails
+    });
+}
+
 module.exports = {
     getCustomerDetails,
     updateFuelAllocation,
     getAllRegisteredVehicles,
     getRemainingFuel,
     updateCustomerFuelAllocation,
-    resetPassword
+    resetPassword,
+    getDashboardDetails
 }

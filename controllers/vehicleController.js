@@ -387,6 +387,71 @@ const selectFuelStation = (fuelStations) => {
     return selectedFuelStation
 }
 
+// remove the vehicle with the given id
+// return the status of the operation
+const removeVehicle = async (req, res) => {
+
+    // if vehicle id is not set send a error response
+    if(!req.body.vid) 
+        return res.sendStatus(400);
+
+    // get the logged in customer's vehicle list using the customer's NIC number from the database
+    const vehicle = await Vehicle.findOne({
+        _id: req.body.vid
+    }).select({
+        fuelType: 1,
+        vehicleType: 1,
+        isQueued: 1,
+        registeredUnder: 1
+    });
+
+    if(!vehicle) 
+        return res.sendStatus(400);
+
+    // check if the vehicle is queued in a fuel station
+    if (vehicle.isQueued)
+        // if so cannot be removed send error response
+        return res.json({
+            success: false
+        });
+        
+    // get the logged in customer's vehicle list using the customer's NIC number from the database
+    const customer = await User.findOne({
+        _id: vehicle.registeredUnder,
+    }).select({
+        fuelAllocation: 1,
+        remainingFuel: 1,
+        vehicles: 1
+    });
+    
+    if(!customer) 
+        return res.sendStatus(400);
+        
+    // get the fuel allocation of that vehicle based on its vehicle type
+    let fuelAllocation = await getFuelAllocation(vehicle.vehicleType);
+    fuelAllocation = parseInt(fuelAllocation);
+    customer.fuelAllocation[vehicle.fuelType] -= fuelAllocation; // decrease fuel allocation
+
+    if (customer.remainingFuel[vehicle.fuelType] >= fuelAllocation)
+        customer.remainingFuel[vehicle.fuelType] -= fuelAllocation; // decrease remaining fuel amount by the new fuel allocation
+    else
+        customer.remainingFuel[vehicle.fuelType] = 0;
+
+    const index = customer.vehicles.indexOf(req.body.vid);
+    if (index > -1) { // only splice array when item is found
+        customer.vehicles.splice(index, 1); // 2nd parameter means remove one item only
+    }
+
+    // Delete the vehicle by its _id
+    await Vehicle.deleteOne({ _id: req.body.vid });
+    await customer.save();
+
+    // if vehicle removed successfully send a success flag as the response
+    return res.json({
+        success: true
+    });
+}
+
 module.exports = {
     checkVehicleRegistered,
     checkVehicleExistence,
@@ -398,5 +463,6 @@ module.exports = {
     getFuelAllocationCategory,
     getFuelAllocation,
     DMTGetVehicleDetails,
-    selectFuelStation
+    selectFuelStation,
+    removeVehicle
 }
