@@ -101,7 +101,8 @@ const login = async (req, res) => {
         user.refreshToken = refreshToken;
         user.save();
         //send refresh token as http-only cokies
-        res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        const setCookieresult = res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
+        // console.log(setCookieresult);
         res.send({ accessToken: accessToken, user: _.pick(user, ['email', '_id', 'role']) });
 
     }
@@ -115,7 +116,7 @@ const FSSLogin = async (req, res) => {
 
     //find user by the registrationNumber
     const user = await FuelStation.findOne({ registrationNumber: registrationNumber })
-        .select({ registrationNumber: 1, staffPassword: 1});
+        .select({ registrationNumber: 1, staffPassword: 1 });
     if (!user) return res.sendStatus(401);
 
     //compare two passwords
@@ -125,7 +126,7 @@ const FSSLogin = async (req, res) => {
         return res.sendStatus(401);
     } else {
         //send refresh token to user as a http-only cokie
-        res.send({user: _.pick(user, ['registrationNumber'])});
+        res.send({ user: _.pick(user, ['registrationNumber']) });
 
     }
 }
@@ -164,7 +165,7 @@ const customerLogin = async (req, res) => {
         user.save();
 
         //send refresh token to user as a http-only cokie
-        res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
         res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
 
     }
@@ -175,7 +176,7 @@ new access token, validation of refresh token is needed */
 const refresh = async (req, res) => {
     //access request cookies for the access token
     const cookies = req.cookies;
-
+    // console.log(cookies);
     //if jwt is not in the cookies, or role is not there, the request will be rejected
     if (!cookies?.jwt || !req.params.role) return res.sendStatus(401);
     // console.log(cookies.jwt);
@@ -236,7 +237,7 @@ const logout = async (req, res) => {
     user.refreshToken = '';
     await user.save();
 
-    res.clearCookie('jwt', { httpOnly: true });  // for https we need to pass secure: true
+    res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });  // for https we need to pass secure: true
     res.sendStatus(204);
 }
 
@@ -307,7 +308,7 @@ const validateFirebaseAndLogin = async (req, res) => {
             user.save();
 
             //send the refresh token to user as a http-only cookie
-            res.cookie('jwt', refreshToken, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+            res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
             res.send({ accessToken: accessToken, user: _.pick(user, ['NIC', '_id', 'role']) });
         } else {
             return res.sendStatus(401); //unauthorized
