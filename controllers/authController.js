@@ -101,7 +101,8 @@ const login = async (req, res) => {
         user.refreshToken = refreshToken;
         user.save();
         //send refresh token as http-only cokies
-        res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', maxAge: 24 * 60 * 60 * 1000 });
+        const setCookieresult = res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', secure: true, maxAge: 24 * 60 * 60 * 1000 });
+        console.log(setCookieresult);
         res.send({ accessToken: accessToken, user: _.pick(user, ['email', '_id', 'role']) });
 
     }
