@@ -1,3 +1,4 @@
+require("dotenv").config();
 const vehicleController = require('../../controllers/vehicleController');
 require('../../startup/db')();
 
