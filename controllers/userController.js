@@ -179,9 +179,9 @@ const getAllFSMs = async (req, res) => {
         {$match:{role:5002} 
     },
     {$lookup:{
-        from:'FuelStation',
-        localField:'_id',
-        foreignField:'ownerUID',
+        from:'fuelstations',
+        localField:'email',
+        foreignField:'email',
         as: 'fuelStation',
     }}]
     )
