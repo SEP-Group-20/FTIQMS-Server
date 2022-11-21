@@ -411,7 +411,7 @@ const resetFSMPassword = async (req, res) => {
 const getAdminAccountDetails = async (req, res) => {
     if (!req.body.userEmail) return res.sendStatus(400);
 
-    // get the logged in admin's details using the NIC number from the database
+    // get the logged in admin's details using the email address from the database
     const admin = await User.findOne({
         email: req.body.userEmail
     });

@@ -46,4 +46,24 @@ describe("Customer", () => {
             });
         });
     });
+
+    describe("get customer account details", () => {
+        
+        describe("Request body with invalid NIC", () => {
+            it("Should return a 400", async () => {
+                await supertest(app).post('/api/user/getCustomerDetailsByNIC')
+                .send({ userNIC: "5656" })
+                .expect(400);
+                
+            });
+        });
+
+        describe("Request body with valid NIC", () => {
+            it("Should display the Customer details", async () => {
+                const res = await supertest(app).post('/api/user/getCustomerDetailsByNIC')
+                    .send({ userNIC: "997970500v" });
+                expect(res.body).toHaveProperty("success", true);
+            });
+        });
+    });
 });
