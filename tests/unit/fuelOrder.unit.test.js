@@ -1,3 +1,4 @@
+require("dotenv").config();
 const fuelOrderController = require('../../controllers/fuelOrderController');
 require('../../startup/db')();
 
