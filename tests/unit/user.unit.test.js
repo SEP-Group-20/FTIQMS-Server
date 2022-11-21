@@ -42,3 +42,20 @@ describe("getUsernameByEmail Unit", () => {
     });
 });
 
+describe("getCustomerDetailsByNIC Unit", () => {
+    describe("When NIC is invalid", () => {
+        it('Should return none', async () => {
+            const result = await userController.getCustomerDetailsByNIC("997970560v");
+            expect(result).toEqual(null);
+        });
+    });
+    describe("When NIC is valid", () => {
+        it('Should return the relevant customers details', async () => {
+            
+            const result = await userController.getCustomerDetailsByNIC("997970560V");
+            expect(result.success).toEqual(true);
+
+        });
+    });
+});
+
