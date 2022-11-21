@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const emailAccount = require("../config/email-account.json");
+const emailAccount = require("../config/email-account");
 
 //create transporter
 let transporter = nodemailer.createTransport(emailAccount);

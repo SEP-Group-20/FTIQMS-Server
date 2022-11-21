@@ -1,3 +1,4 @@
+require("dotenv").config();
 const userController = require('../../controllers/userController');
 require('../../startup/db')();
 

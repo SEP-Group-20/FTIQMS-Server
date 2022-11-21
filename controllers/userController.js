@@ -179,9 +179,9 @@ const getAllFSMs = async (req, res) => {
         {$match:{role:5002} 
     },
     {$lookup:{
-        from:'FuelStation',
-        localField:'_id',
-        foreignField:'ownerUID',
+        from:'fuelstations',
+        localField:'email',
+        foreignField:'email',
         as: 'fuelStation',
     }}]
     )
@@ -407,6 +407,76 @@ const resetFSMPassword = async (req, res) => {
     });
 }
 
+// get details of a admin 
+const getAdminAccountDetails = async (req, res) => {
+    if (!req.body.userEmail) return res.sendStatus(400);
+
+    // get the logged in admin's details using the NIC number from the database
+    const admin = await User.findOne({
+        email: req.body.userEmail
+    });
+
+    if (!admin) return res.sendStatus(400);
+    
+    const adminDetails = _.pick(admin, [
+        "firstName",
+        "lastName",
+        "email",
+        "mobile",
+    ]);
+
+    return res.json({
+        success: true,
+        adminDetails: adminDetails
+    });
+}
+
+// reset the password of the admin
+const resetAdminPassword = async (req, res) => {
+    if (!req.body.userEmail || !req.body.newPassword) return res.sendStatus(400);
+    let forgot;
+    forgot = (req.body.forgot) ? true : false;
+
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+
+    // get the logged in admin's password using the admin's NIC number from the database
+    const admin = await User.findOne({
+        email: req.body.userEmail
+    }).select({
+        password: 1
+    });
+
+    if (!admin) return res.sendStatus(400);
+
+    if (!forgot) {//compare the stored password and password which is entered by the user
+        const result = await bcrypt.compare(oldPassword, admin.password);
+
+        // check if the current password has and old password hash match
+        if (!result) {
+            return res.json({
+                success: false,
+                message: "Wrong old password"
+            });
+        }
+    }
+
+    // hash the old password
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    // set the password as the new hshed password
+    admin.password = newHash;
+
+    // save the updated admin
+    await admin.save();
+
+    // send the details to the frontend as a response with a success flag
+    return res.json({
+        success: true,
+        message: "Password reset successful"
+    });
+}
+
 
 module.exports = {
     getUserByNIC,
@@ -429,7 +499,8 @@ module.exports = {
     getSelectedFuelStations,
     setSelectedFuelStations,
     resetPwd,
-    resetFSMPassword
-
+    resetFSMPassword,
+    getAdminAccountDetails,
+    resetAdminPassword
 }
 

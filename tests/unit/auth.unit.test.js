@@ -1,3 +1,4 @@
+require("dotenv").config();
 const authController = require('../../controllers/authController');
 describe("validateCustomer Unit", () => {
     describe("When NIC is invalid", () => {
