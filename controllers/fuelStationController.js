@@ -812,7 +812,7 @@ const getFuelStationDetails = async (req, res) => {
 
     // get the logged in fuel station's details using the NIC number from the database
     const fuelStation = await FuelStation.findOne({
-        NIC: req.body.userEmail
+        email: req.body.userEmail
     });
 
     if (!fuelStation) return res.sendStatus(400);
